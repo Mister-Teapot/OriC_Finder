@@ -338,5 +338,5 @@ if __name__ == '__main__':
         print(QoP, oriCs)
 
         pf.plot_Z_curve_2D(Z_curve[:2], [plot_oriCs, plot_oriCs], name)
-        pf.plot_skew(GC_skew, oriCs[0], name)
-        pf.plot_Z_curve_3D(Z_curve, name)
+        # pf.plot_skew(GC_skew, oriCs[0], name)
+        # pf.plot_Z_curve_3D(Z_curve, name)

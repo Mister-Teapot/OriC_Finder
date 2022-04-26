@@ -64,7 +64,7 @@ for i in range(split_DnaA.shape[1]):
 
 raw_oriC = raw_oriC.astype( {f'oriC_i':'float', 'oriC_f':'float'} )
 
-# Remove RefSeq versions in accension number (might keep them later, since DoriC is not up to date with NCBI in 2022)
+# Remove RefSeq versions in accension number (might keep them later, since DoriC is from 2018)
 raw_oriC['RefSeq'] = raw_oriC['RefSeq'].str.extract(r'([^.]*)')
 raw_oriC['Lineage'] = raw_oriC['Lineage'].str.rstrip('.')
 
@@ -76,6 +76,9 @@ raw_oriC['Organism'] = raw_oriC['Organism'].str.replace('chromosome III', 'chrom
 raw_oriC['Organism'] = raw_oriC['Organism'].str.replace('chromosome II', 'chromosome 2', regex = True)
 raw_oriC['Organism'] = raw_oriC['Organism'].str.replace('chromosome I', 'chromosome 1', regex = True)
 
+for i in raw_oriC['RefSeq'].unique():
+    print(i)
+    # print(raw_oriC['RefSeq'].unique().shape)
 
 #####################################################################################################################################
 ### Katelyn found that organisms with multiple oriC usually flank the DnaA region and wondered whether they were
@@ -97,7 +100,6 @@ more_than_two_oriC = dups_refseq[dups_refseq > 2]
 # print(f'There are {len(more_than_two_oriC.values.tolist())} organsims for which DoriC predicted more than two oriC')
 # print(f'I will delete these, because there are only 5 and the merging with flanking DnaA makes my brain hurt.')
 
-print(more_than_two_oriC)
 two_oriC = multi_oriC.copy()
 del multi_oriC
 for i in more_than_two_oriC.keys().to_list():
