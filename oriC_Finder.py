@@ -56,7 +56,7 @@ def calc_Z_curve_GC_skew(seq):
     return np.asarray(x), np.asarray(y), np.asarray(z), np.asarray(gc_skew)
 
 
-def detect_peaks(skew_array, mode='max'):
+def detect_peaks(skew_array):
     """Calculates peaks of 1D-np.array and returns its indeces."""
     maxima, _ = sp.find_peaks( skew_array, distance=len(skew_array)//12)
     maxima    = np.append(maxima, skew_array.argmax())
@@ -329,7 +329,7 @@ if __name__ == '__main__':
     # oriC in min of x (Purine vs. Pyrimidine)
     # oriC in max of y (Amino vs Keto)
 
-    for fasta in os.listdir(r'C:\0. School\Bachelor Thesis\Zoya_Code+Data\OriFinder\OriC-Finder\test_fastas'):
+    for fasta in os.listdir('./test_fastas'):
         file = os.path.join('test_fastas', fasta)
         name, oriCs, Z_curve, GC_skew, QoP = find_oriCs(file)
         plot_oriCs = [x for y in oriCs for x in y]

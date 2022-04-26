@@ -166,4 +166,4 @@ def read_database(db_loc, method, inplace=True, split_genome=False, out_loc=None
 
 
 if __name__ == "__main__":
-    read_database(r"C:\0. School\Bachelor Thesis\Zoya_Code+Data\OriFinder\OriC-Finder", method='website', split_genome=True, inplace=True, filter_plasmids=True)
+    read_database(os.getcwd(), method='website', split_genome=True, inplace=True, filter_plasmids=True)

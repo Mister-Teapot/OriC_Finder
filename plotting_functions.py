@@ -34,8 +34,8 @@ def plot_Z_curve_2D(y_val_list, peaks, name):
 
     for i, ax in enumerate(y_val_list):
         peaks_y = np.asarray([ax[j] for j in peaks[i]]) # y refers to the y-axis coordinates, not the y-curve
-        ax_list[i].plot(range(len(ax)), ax, color_list[i])
-        ax_list[i].scatter(peaks[i], peaks_y, marker='X', c='k')
+        ax_list[i].plot(range(len(ax)), ax, color_list[i], zorder=1)
+        ax_list[i].scatter(peaks[i], peaks_y, marker='X', c='k', zorder=2)
         ax_list[i].tick_params(axis ='y', colors=color_list[i])
 
     base_ax.set_title(f'2D Z-Curve: {name}', fontsize=10,loc='center', pad=20)
@@ -51,7 +51,7 @@ def plot_skew(skewArray, peaks, name):
     peaks_y = np.asarray([skewArray[i] for i in peaks])
 
     ax1.set_title(f'GC-skew: {name}', fontsize=10,loc='center', pad=20)
-    ax1.plot(range(len(skewArray)), skewArray, 'r')     # cumulative values
-    ax1.scatter(peaks, peaks_y, marker='X', c='k')
+    ax1.plot(range(len(skewArray)), skewArray, 'r', zorder=1)
+    ax1.scatter(peaks, peaks_y, marker='X', c='k', zorder=2)
     plt.show()
 
