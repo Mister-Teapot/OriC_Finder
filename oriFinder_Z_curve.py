@@ -112,10 +112,8 @@ def filter_peaks(curve, peaks, peak_windows, mode='max'):
         mode           : 'max'|'min'. Which type of extreme do you want to find?
     Return:
         accepted_peaks : peaks that passed both filters
-        accepted_winds : peak_windows belonging to accepted_peaks
     """
     rejected_peaks = []
-    rejected_winds_idx = []
     
     for i, win_i in enumerate(peak_windows):
         # Filter 1: Check if any other windows intersecting the window of peak i
@@ -127,41 +125,24 @@ def filter_peaks(curve, peaks, peak_windows, mode='max'):
                 elif mode == 'min':
                     rejected_peaks.extend( np.where(curve == max(curve[peaks[i]], curve[peaks[j]]) )[0].tolist() )
 
-                if peaks[i] in rejected_peaks:
-                    rejected_winds_idx.append(i)
-                else:
-                    rejected_winds_idx.append(j)
-
         # Filter 2: Check if peaks are actually the extreme in their windows
-        if mode == 'max':
-            if np.max( curve[win_i] ) > curve[peaks[i]]:
+        if mode == 'max' and np.max( curve[win_i] ) > curve[peaks[i]]:
                 rejected_peaks.append(peaks[i])
-                rejected_winds_idx.append(i)
-        elif mode == 'min':
-            if np.min( curve[win_i] ) < curve[peaks[i]]:
+        elif mode == 'min' and np.min( curve[win_i] ) < curve[peaks[i]]:
                 rejected_peaks.append(peaks[i])
-                rejected_winds_idx.append(i)
-
-    # Remove duplicates from rejection lists
-    rejected_peaks = list(set(rejected_peaks))
 
     # Create list of peaks that passed both filters
+    rejected_peaks = list(set(rejected_peaks))
     accepted_peaks = [x for x in peaks if x not in rejected_peaks]
-    accepted_winds_idx = set( x for x in range(len(peak_windows)) ).difference(rejected_winds_idx)
-    accepted_winds = [peak_windows[x] for x in accepted_winds_idx]
 
-    # Fail-safe in case no peaks were accepted
-    #   I don't expect this to ever be needed, since global extremes never get rejected
+    # Fail-safe in case no peaks were accepted, I don't expect this to ever be needed, since global extremes never get rejected
     if len(accepted_peaks) == 0:
         print('it was needed... that\'s bad...')
         if mode == 'max':
             accepted_peaks.append(np.argmax(curve))
         elif mode == 'min':
             accepted_peaks.append(np.argmin(curve))
-        win = get_peak_windows(curve.size, accepted_peaks, window_size=len(set(peak_windows[0])))
-        accepted_winds.append(win[0])
-
-    return accepted_peaks, accepted_winds
+    return accepted_peaks
 
 
 def get_peaks_to_merge(peaks, peak_windows):
@@ -206,9 +187,10 @@ def process_array(curve, mode='max', window_size=500):
     """
     init_peaks = detect_peaks(curve)
     init_peak_windows = get_peak_windows(curve.size, init_peaks, window_size=window_size)
-    accept_peaks, accept_windows = filter_peaks(curve, init_peaks, init_peak_windows, mode=mode)
+    accept_peaks = filter_peaks(curve, init_peaks, init_peak_windows, mode=mode)
+    accept_windows = get_peak_windows(curve.size, accept_peaks, window_size=window_size)
     peaks_to_merge = get_peaks_to_merge(accept_peaks, accept_windows)
-    
+
     # Necessary, because global extreme can be a plateau and there might be two peaks only 5 bp apart
     single_peaks = [x for x in accept_peaks if not any(x in y for y in peaks_to_merge)]
     merged_peaks = [merge_peaks(curve.size, to_merge[0], to_merge[1]) for to_merge in peaks_to_merge]
@@ -289,7 +271,7 @@ def get_oriC_ranges(seq_len, oriC_locations, range_size=500):
     return oriC_ranges
 
 
-def find_oriCs(filename, oriC_size=500, window_size=70000):
+def find_oriCs(filename, oriC_size=500, window_size=60000):
     '''
     Locates potential oriC based on Z-curve and GC-skew analysis.
     Input:
@@ -361,25 +343,19 @@ if __name__ == '__main__':
     # oriC in min of x (Purine vs. Pyrimidine)
     # oriC in max of y (Amino vs Keto)
 
-    # name, oriCs, Z_curve, GC_skew, QoP = find_oriCs(r'C:\0. School\Bachelor Thesis\Halobacterium_NRC_1.fna')
-    # plot_oriCs = [x for y in oriCs for x in y]
-    # pf.plot_Z_curve_2D(Z_curve[:2], [plot_oriCs, plot_oriCs], name)
-    # print(QoP, oriCs)
+    for fasta in os.listdir(r'C:\0. School\Bachelor Thesis\Zoya_Code+Data\OriFinder\OriC-Finder\test_fastas'):
+        file = os.path.join('test_fastas', fasta)
+        name, oriCs, Z_curve, GC_skew, QoP = find_oriCs(file)
+        plot_oriCs = [x for y in oriCs for x in y]
 
-    # name, oriCs, Z_curve, GC_skew, QoP = find_oriCs(r'C:\0. School\Bachelor Thesis\Escherichia_coli_K_12.fna')
-    # plot_oriCs = [x for y in oriCs for x in y]
-    # pf.plot_Z_curve_2D(Z_curve[:2], [plot_oriCs, plot_oriCs], name)
-    # print(QoP, oriCs)
+        print(name)
+        print(QoP, oriCs)
 
-    # name, oriCs, Z_curve, GC_skew, QoP = find_oriCs(r'C:\0. School\Bachelor Thesis\Bacillus_subtilis_168.fna')
-    # plot_oriCs = [x for y in oriCs for x in y]
-    # pf.plot_Z_curve_2D(Z_curve[:2], [plot_oriCs, plot_oriCs], name)
-    # print(QoP, oriCs)
+        pf.plot_Z_curve_2D(Z_curve[:2], [plot_oriCs, plot_oriCs], name)
+        # pf.plot_skew(GC_skew, oriCs[0], name)
+        # pf.plot_Z_curve_3D(Z_curve, name)
 
-    name, oriCs, Z_curve, GC_skew, QoP = find_oriCs(r'C:\0. School\Bachelor Thesis\Zoya_Code+Data\OriFinder\OriC-Finder\DoriC data prep\NZ_CP024969.fna')
-    plot_oriCs = [x for y in oriCs for x in y]
-    pf.plot_Z_curve_2D(Z_curve[:2], [plot_oriCs, plot_oriCs], name)
-    print(QoP, oriCs)
-    
-    # pf.plot_skew(GC_skew, oriCs[0], name)
-    # pf.plot_Z_curve_3D(Z_curve, name)
+    # name, oriCs, Z_curve, GC_skew, QoP = find_oriCs(r'C:\0. School\Bachelor Thesis\Zoya_Code+Data\OriFinder\OriC-Finder\test_fastas\GCF_008369605.1_ASM836960v1_genomic_1.fna')
+    # plot_oriCs = [x for y in oriCs for x in y]
+    # print(name)
+    # print(QoP, oriCs)

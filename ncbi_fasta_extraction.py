@@ -1,13 +1,14 @@
 '''
 Dataset structure via website:
-genome_assemblies_genome_fasta/                       # 1. You actually get a .tar-file. Unzip that first
-├── ncbi-genomes-YYYY-MM-DD/                          # 2. folder with datestamp
-│   ├── GCF_000006925.2.fna.gz                        # 3. zip file that contains the .fasta-file with the genome sequence
-│   │   └── GCF_000006925.2_ASM692v2_genomic.fna      # 4. the actual fasta file we want...
-│   ├── ...
-│   ├── md5checksums.txt                              # -. Collection of MD5SUM5 hashes
-│   └── README.txt                                    # -. Generic readme, explains download options
-└── report.txt
+genome_assemblies_genome_fasta.tar                         # 1. .tar-folder
+├── genome_assemblies_genome_fasta/                        # 2. Unzipped .tar-folder
+│    ├── ncbi-genomes-YYYY-MM-DD/                          # 3. folder with datestamp
+│    │   ├── GCF_000006925.2.fna.gz                        # 4. zip file that contains the .fasta-file with the genome sequence
+│    │   │   └── GCF_000006925.2_ASM692v2_genomic.fna      # 5. the actual fasta file we want...
+│    │   ├── ...
+│    │   ├── md5checksums.txt                              # -. Collection of MD5SUM5 hashes
+│    │   └── README.txt                                    # -. Generic readme, explains download options
+│    └── report.txt
 
 Dataset structure via FTP:
 refseq/                                               # 1. the folder you get
@@ -27,9 +28,11 @@ refseq/
 
 '''
 
-import gzip
 import os
+import gzip
 import shutil
+import tarfile
+from contextlib import closing
 
 os.chdir( os.path.dirname( os.path.abspath(__file__) ) )
 
@@ -71,6 +74,9 @@ def read_database(db_loc, method, inplace=True, split_genome=False, out_loc=None
 
 
     if method == 'website':
+        with closing(tarfile.open('./genome_assemblies_genome_fasta.tar')) as fh:
+            fh.extractall('./genome_assemblies_genome_fasta')
+
         # Unzipping this is very similar to FTP
         db = os.path.join(db_loc, 'genome_assemblies_genome_fasta')
         if out_loc is None:
@@ -118,7 +124,8 @@ def read_database(db_loc, method, inplace=True, split_genome=False, out_loc=None
     if split_genome:
         # Read through the FASTA twice. Once to assert how many new files are needed, once to place the right info in each file.
         # There is probably a much better way to do this, but I don't know how to safely do it. While-loops for file handling sound scary.
-        in_loc = out_loc
+        in_loc = os.path.join('refseq', 'bacteria')
+        out_loc = in_loc
         sample_list = os.listdir(in_loc).copy()
         for sample in sample_list:
             files_needed = 0
@@ -145,7 +152,7 @@ def read_database(db_loc, method, inplace=True, split_genome=False, out_loc=None
 
 
     if filter_plasmids:
-        in_loc = out_loc
+        # only True if split_genomes
         sample_list = os.listdir(in_loc).copy()
         for sample in sample_list:
             delete = False
@@ -158,4 +165,4 @@ def read_database(db_loc, method, inplace=True, split_genome=False, out_loc=None
 
 
 if __name__ == "__main__":
-    read_database(r"C:\0. School\Bachelor Thesis\Zoya_Code+Data\oriFinder\oriFinder Comparison\NCBI_data_prep", method='FTP', split_genome=True, inplace=True, filter_plasmids=True)
+    read_database(r"C:\0. School\Bachelor Thesis\Zoya_Code+Data\OriFinder\OriC-Finder", method='website', split_genome=True, inplace=True, filter_plasmids=True)
