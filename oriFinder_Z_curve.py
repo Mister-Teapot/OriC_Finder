@@ -314,8 +314,6 @@ def find_oriCs(filename, oriC_size=500, window_size=70000):
     peaks_y,  peak_windows_y  = process_array(y , mode='max', window_size=window_size)
     peaks_gc, peak_windows_gc = process_array(gc, mode='min', window_size=window_size)
 
-    pf.plot_Z_curve_2D([x, y], [peaks_x, peaks_y], name)
-
     matched_peaks = match_peaks(peaks_x, peaks_y, peak_windows_x, peak_windows_y)
 
     if len(matched_peaks) == 0:
@@ -362,10 +360,11 @@ def find_oriCs(filename, oriC_size=500, window_size=70000):
 if __name__ == '__main__':
     # oriC in min of x (Purine vs. Pyrimidine)
     # oriC in max of y (Amino vs Keto)
-    name, oriCs, Z_curve, GC_skew, QoP = find_oriCs(r'C:\0. School\Bachelor Thesis\Halobacterium_NRC_1.fna')
-    plot_oriCs = [x for y in oriCs for x in y]
-    pf.plot_Z_curve_2D(Z_curve[:2], [plot_oriCs, plot_oriCs], name)
-    print(QoP, oriCs)
+
+    # name, oriCs, Z_curve, GC_skew, QoP = find_oriCs(r'C:\0. School\Bachelor Thesis\Halobacterium_NRC_1.fna')
+    # plot_oriCs = [x for y in oriCs for x in y]
+    # pf.plot_Z_curve_2D(Z_curve[:2], [plot_oriCs, plot_oriCs], name)
+    # print(QoP, oriCs)
 
     # name, oriCs, Z_curve, GC_skew, QoP = find_oriCs(r'C:\0. School\Bachelor Thesis\Escherichia_coli_K_12.fna')
     # plot_oriCs = [x for y in oriCs for x in y]
@@ -376,6 +375,11 @@ if __name__ == '__main__':
     # plot_oriCs = [x for y in oriCs for x in y]
     # pf.plot_Z_curve_2D(Z_curve[:2], [plot_oriCs, plot_oriCs], name)
     # print(QoP, oriCs)
+
+    name, oriCs, Z_curve, GC_skew, QoP = find_oriCs(r'C:\0. School\Bachelor Thesis\Zoya_Code+Data\OriFinder\OriC-Finder\DoriC data prep\NZ_CP024969.fna')
+    plot_oriCs = [x for y in oriCs for x in y]
+    pf.plot_Z_curve_2D(Z_curve[:2], [plot_oriCs, plot_oriCs], name)
+    print(QoP, oriCs)
     
     # pf.plot_skew(GC_skew, oriCs[0], name)
     # pf.plot_Z_curve_3D(Z_curve, name)
