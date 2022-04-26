@@ -40,19 +40,20 @@ def read_database(db_loc, method, inplace=True, split_genome=False, out_loc=None
     """
     Extracts FASTA files from the raw NCBI download. Only works if you only downloaded FASTA files.
     Arguments:
-        db_loc          : path to location of database
+        db_loc          : path to folder with the database
         method          : ['website', 'FTP']
                           The structure of the download you get directly from the website is different
                           than that of the one you get with the FTP (eg. ngd module, datasets commandline tool)
                               'website' : small dataset downloaded directly from the NCBI website
                               'FTP'     : downloaded via the NCBI FTP
         inplace         : if True, deletes the original download to save space.
-                          NOTE: PERMANENTLY deletes the original folder with the gz and hash files. Set to False if memory
-                          space is not an issue. I added it for my personal benefit otherwise I would need to temporarily
-                          store the database twice (not always possible) and delete the compressed folders manually
+                          NOTE: PERMANENTLY deletes the original folder with the gz and hash files for FTP-download. Set to False
+                          if memory space is not an issue. I added it for my personal benefit otherwise I would need to temporarily
+                          store the database twice (not always possible) and delete the compressed folders manually. If download is
+                          via 'website', then the .tar will not be removed.
         split_genome    : if True, gives each chromosome and plasmid a separate FASTA file.
                           NOTE: Files that need splitting will get new names AND happens in the place of the out_loc !!
-                          New name = old name + _i, with i = position in original FASTA.
+                          New name = old name + _i, with i = index of sequence in original FASTA (zero-indexed).
         filter_plasmids : if True, deletes all FASTA files with plasmid sequences.
                           NOTE: split_genome must be True for filter to work.
         out_loc         : Extracted dataset output path. Necessary if inplace=False.

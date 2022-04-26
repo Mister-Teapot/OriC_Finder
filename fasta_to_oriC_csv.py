@@ -2,7 +2,7 @@ import os
 # Set cwd to location of this script
 os.chdir( os.path.dirname( os.path.abspath(__file__) ) )
 
-from oriFinder_Z_curve import find_oriCs
+from oriC_Finder import find_oriCs
 
 import pandas as pd
 pd.set_option('display.width', None)

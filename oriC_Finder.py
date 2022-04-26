@@ -12,7 +12,7 @@ os.chdir( os.path.dirname( os.path.abspath(__file__) ) )
 
 def read_FASTA(filename):
     """Read in a file in FASTA format and returns the name and sequence"""
-    seqString = ''
+    seq = ''
     name = None
     with open(filename, 'r') as fh:
         for line in fh:
@@ -20,11 +20,10 @@ def read_FASTA(filename):
             if line[0] == '>' and name is None:
                 name = line[1:]
             elif line[0] == '>' and name is not None:
-                # In case the FASTA contains plasmid sequences too.
-                break
+                break # In case the FASTA contains multiple sequences, only read the first one.
             else:
-                seqString = seqString + line
-    return name, seqString.upper()
+                seq = seq + line
+    return name, seq.upper()
 
 
 def calc_Z_curve_GC_skew(seq):
@@ -114,7 +113,6 @@ def filter_peaks(curve, peaks, peak_windows, mode='max'):
         accepted_peaks : peaks that passed both filters
     """
     rejected_peaks = []
-    
     for i, win_i in enumerate(peak_windows):
         # Filter 1: Check if any other windows intersecting the window of peak i
         for j, win_j in enumerate(peak_windows):
@@ -158,8 +156,7 @@ def get_peaks_to_merge(peaks, peak_windows):
     for i, win_i in enumerate(peak_windows):
         for j in range(len(peaks)):
             if peaks[j] in win_i and i != j:
-                # No need to check if they give the same value on the curve,
-                # because if they didn't, one would have been rejected by filter_peaks() already
+                # No need to check if they give the same value on the curve, because if they didn't, one would have been rejected by filter_peaks() already
                 peaks_to_merge.append( tuple( sorted([peaks[i], peaks[j]]) ) )
     return list(set(peaks_to_merge))
 
@@ -169,8 +166,8 @@ def merge_peaks(curve_size, a, b):
     Calculate the distance between index a and b on circular DNA
     Returns the middle point between the shortest distance
     """
-    dist_1 = max(a, b) - min(a, b) # big - small
-    dist_2 = min(a, b) + curve_size-1 - max(a, b) # dist through 0
+    dist_1 = max(a, b) - min(a, b)
+    dist_2 = min(a, b) + curve_size-1 - max(a, b)
     if dist_2 < dist_1:
         merged_idx = min(a, b) - dist_2//2
         if merged_idx < 0:
@@ -234,7 +231,6 @@ def sort_oriCs(curve_a, curve_b, oriC_locations, mode_a='max', mode_b='max', win
     prominences = []
     for i, oriC_pos in enumerate(oriC_locations):
         oriC_window = get_peak_windows(curve_a.size, [oriC_pos], window_size=window_size)[0]
-        # print('window', oriC_window)
         if extreme_a in oriC_window or extreme_b in oriC_window:
             prominences.append( (i, float('inf')) )
         else:
@@ -253,20 +249,16 @@ def get_oriC_ranges(seq_len, oriC_locations, range_size=500):
     oriC_ranges = []
     for oriC_range in full_oriC_ranges:
         if seq_len-1 in oriC_range and 0 in oriC_range:
-            # oriC on domain borders -> split into two oriC.
+            # oriC on domain borders -> split into a and b to work with.
             in_a = True
             a, b = [], []
             for i, val in enumerate(oriC_range):
                 if i-1 > 0 and val != oriC_range[i-1] + 1:
                     in_a = False
-                if in_a:
-                    a.append(val)
-                else:
-                    b.append(val)
+                a.append(val) if in_a else b.append(val)
             oriC_ranges.append( (min(a), max(a)) )
             oriC_ranges.append( (min(b), max(b)) )
         else:
-            # get_peak_windows() sorts the window before returning it
             oriC_ranges.append( (oriC_range[0], oriC_range[-1]) )
     return oriC_ranges
 
@@ -299,8 +291,7 @@ def find_oriCs(filename, oriC_size=500, window_size=60000):
     matched_peaks = match_peaks(peaks_x, peaks_y, peak_windows_x, peak_windows_y)
 
     if len(matched_peaks) == 0:
-        # Option 1: Base position solely on global extremes (Won't lead to matched peaks unless the window_size is HUGE)
-        # If this is the option something went wrong...
+        # Option 1: Base position solely on global extremes (Won't lead to matched peaks unless the window_size is larger than before)
         matched_peaks = get_last_resort_positions(x, y, window_size=window_size) # window_size=window_size*2
         option += 1
 
@@ -315,27 +306,22 @@ def find_oriCs(filename, oriC_size=500, window_size=60000):
         option += 1
 
     if len(matched_peaks) == 0:
-        # Option 4: Base position of peaks of x (or y or gc, consult more literature for better option of the two)
+        # Option 4: Base position of peaks of x
         matched_peaks = [x.argmin()]
         option += 1
 
     # Made it through the if's of despair...
-    oriC_locations = []
-    for matches in matched_peaks:
-        oriC_locations.append( merge_peaks(x.size, matches[0], matches[1]) )
+    oriC_locations = [merge_peaks(len(sequence), matches[0], matches[1]) for matches in matched_peaks]
 
-    # Sort oriC locations based on importance
-    if len(oriC_locations) > 1:
-        # option 1 and 4 will have only one oriC_location
-        if option == 0:
-            oriC_locations = sort_oriCs(x, y, oriC_locations, mode_a='min', mode_b='max', window_size=window_size)
-        elif option == 2:
-            oriC_locations = sort_oriCs(x, gc, oriC_locations, mode_a='min', mode_b='min', window_size=window_size)
-        elif option == 3:
-            oriC_locations = sort_oriCs(y, gc, oriC_locations, mode_a='max', mode_b='min', window_size=window_size)
+    # Sort oriC locations based on importance (option 1 and 4 only have one oriC by definition)
+    if option == 0:
+        oriC_locations = sort_oriCs(x,  y, oriC_locations, mode_a='min', mode_b='max', window_size=window_size)
+    elif option == 2:
+        oriC_locations = sort_oriCs(x, gc, oriC_locations, mode_a='min', mode_b='min', window_size=window_size)
+    elif option == 3:
+        oriC_locations = sort_oriCs(y, gc, oriC_locations, mode_a='max', mode_b='min', window_size=window_size)
 
     oriC_ranges = get_oriC_ranges(len(sequence), oriC_locations, range_size=oriC_size)
-
     return name, oriC_ranges, (x, y, z), gc, option
 
 
@@ -352,10 +338,5 @@ if __name__ == '__main__':
         print(QoP, oriCs)
 
         pf.plot_Z_curve_2D(Z_curve[:2], [plot_oriCs, plot_oriCs], name)
-        # pf.plot_skew(GC_skew, oriCs[0], name)
-        # pf.plot_Z_curve_3D(Z_curve, name)
-
-    # name, oriCs, Z_curve, GC_skew, QoP = find_oriCs(r'C:\0. School\Bachelor Thesis\Zoya_Code+Data\OriFinder\OriC-Finder\test_fastas\GCF_008369605.1_ASM836960v1_genomic_1.fna')
-    # plot_oriCs = [x for y in oriCs for x in y]
-    # print(name)
-    # print(QoP, oriCs)
+        pf.plot_skew(GC_skew, oriCs[0], name)
+        pf.plot_Z_curve_3D(Z_curve, name)
