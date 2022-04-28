@@ -76,10 +76,6 @@ raw_oriC['Organism'] = raw_oriC['Organism'].str.replace('chromosome III', 'chrom
 raw_oriC['Organism'] = raw_oriC['Organism'].str.replace('chromosome II', 'chromosome 2', regex = True)
 raw_oriC['Organism'] = raw_oriC['Organism'].str.replace('chromosome I', 'chromosome 1', regex = True)
 
-for i in raw_oriC['RefSeq'].unique():
-    print(i)
-    # print(raw_oriC['RefSeq'].unique().shape)
-
 #####################################################################################################################################
 ### Katelyn found that organisms with multiple oriC usually flank the DnaA region and wondered whether they were
 ### really two separate oriC or just one that was broken up by the gene. I'll make two dataframes. One that keeps

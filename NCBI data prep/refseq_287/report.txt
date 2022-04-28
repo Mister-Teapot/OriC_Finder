@@ -1,0 +1,13 @@
+HistoryId: MCID_625c3fb7e7391922807fcbfd
+QueryKey: 42
+ReleaseType: RefSeq
+FileType: GENOME_FASTA
+Flat: true
+
+Query title: Search all[filter] AND bacteria[filter] AND  ( latest[filter] OR "latest refseq"[filter] )  AND "chromosome level"[filter] AND "representative genome"[filter] AND all[filter] NOT partial[filter] AND "taxonomy check ok"[filter]  Sort by: SORTORDER
+Search results count: 287
+Entries to download: 287
+
+GENOME_FASTA files in archive: 287
+Total size (bytes): 403007222
+Total time: 1 minute 16 seconds
