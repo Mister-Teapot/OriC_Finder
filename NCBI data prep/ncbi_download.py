@@ -7,6 +7,8 @@ Don't be alarmed if only MD5SUM5 hashes show up at first. Those get downloaded f
 
 refseq_categories='reference'       downloads 15 sequences (24-04-2022)
 refseq_categories='representative'  downloads ~15k sequences (24-04-2022) (I didn't finish the download)
+
+parallel=2 for parallel downloading (set up multithread in sbatch)
 '''
 
 ngd.download(section='refseq', file_formats='fasta', refseq_categories='reference', assembly_levels='complete', groups='bacteria')
