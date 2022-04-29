@@ -1,0 +1,14 @@
+8472684fe34666b4d91ed78466aade74  ./annotation_hashes.txt
+50d5ad988dbd2754f69bb3c979af7441  ./GCF_000005845.2_ASM584v2_assembly_report.txt
+16aea6a1d7c071cb1741a012b2b7e6a9  ./GCF_000005845.2_ASM584v2_assembly_stats.txt
+39565cf883d1342ba4d2248127863d39  ./GCF_000005845.2_ASM584v2_cds_from_genomic.fna.gz
+80234571ef4bc85f6f9180e58655f1ff  ./GCF_000005845.2_ASM584v2_feature_count.txt.gz
+2e400d94c47a53965016624d7eab30e1  ./GCF_000005845.2_ASM584v2_feature_table.txt.gz
+c13d459b5caa702ff7e1f26fe44b8ad7  ./GCF_000005845.2_ASM584v2_genomic.fna.gz
+7cb551f9d6a0552323023ca47fa026ad  ./GCF_000005845.2_ASM584v2_genomic.gbff.gz
+bea2faaa8bead800ed2a4c00cbb42139  ./GCF_000005845.2_ASM584v2_genomic.gff.gz
+8c82fcd30664003f54943f0cec715020  ./GCF_000005845.2_ASM584v2_genomic.gtf.gz
+77853dac0a0d425f79f114d142fcb0c7  ./GCF_000005845.2_ASM584v2_protein.faa.gz
+af429c711f71e47e7956493df4eed226  ./GCF_000005845.2_ASM584v2_protein.gpff.gz
+a767885d401724e2ac5523a65c82d851  ./GCF_000005845.2_ASM584v2_rna_from_genomic.fna.gz
+015d430b105ff4b463c11a3fca905abd  ./GCF_000005845.2_ASM584v2_translated_cds.faa.gz

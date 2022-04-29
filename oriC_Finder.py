@@ -181,6 +181,20 @@ def merge_peaks(curve_size, a, b):
     return merged_idx
 
 
+def match_peaks(peaks_x, peaks_y, peak_windows_x, peak_windows_y):
+    """
+    Checks if the peaks from x line up with the peaks from y.
+    If they don't, then consult the gc-skew.
+    If that still does not give anything: consult Jasmijn
+    """
+    matched_peaks = []
+    for i_x, win_x in enumerate(peak_windows_x):
+        for j_y, win_y in enumerate(peak_windows_y):
+            if len( set(win_x).intersection(win_y) ) > 0:
+                matched_peaks.append( (peaks_x[i_x], peaks_y[j_y]) )
+    return list(set(matched_peaks))
+
+
 def process_array(curve, mode='max', window_size=500):
     """
     Runs the given 1D-array (curve) through all processing functions for oriC identification.
@@ -198,20 +212,6 @@ def process_array(curve, mode='max', window_size=500):
     peaks = single_peaks + merged_peaks
     peak_windows = get_peak_windows(curve.size, peaks, window_size=window_size)
     return peaks, peak_windows
-
-
-def match_peaks(peaks_x, peaks_y, peak_windows_x, peak_windows_y):
-    """
-    Checks if the peaks from x line up with the peaks from y.
-    If they don't, then consult the gc-skew.
-    If that still does not give anything: consult Jasmijn
-    """
-    matched_peaks = []
-    for i_x, win_x in enumerate(peak_windows_x):
-        for j_y, win_y in enumerate(peak_windows_y):
-            if len( set(win_x).intersection(win_y) ) > 0:
-                matched_peaks.append( (peaks_x[i_x], peaks_y[j_y]) )
-    return list(set(matched_peaks))
 
 
 def get_last_resort_positions(x, y, window_size=500):
@@ -269,11 +269,7 @@ def get_oriC_ranges(seq_len, oriC_locations, range_size=500):
     return oriC_ranges
 
 
-def get_dist_penalty(curve_a, curve_b, matched_peaks, mode_a='max', mode_b='max', window_size=500):
-    pass # variation on merge_peaks()
-
-
-def get_n_penalty(seq, curve_a, curve_b, oriC_locations, n_count, mode_a='max', mode_b='max', window_size=500, n_in_curve_factor=10):
+def get_false_order(seq, curve_a, curve_b, oriC_locations, mode_a='max', mode_b='max', window_size=500):
     '''
     Get n_penalty score for how an oriC was predicted. The higher the penalty, the lower the prediction's reliability.
         - N-count in oriC           : if high and multiple oriC, could be a false extreme 
@@ -282,9 +278,7 @@ def get_n_penalty(seq, curve_a, curve_b, oriC_locations, n_count, mode_a='max', 
         n_penalties : n_penalty score
         false_order : T|F, whether the order of the oriCs could be wrong due to 'N' bases in area around oriC
     '''
-    n_in_curve = (n_count/len(seq)) * n_in_curve_factor
     false_order = False
-
     if len(oriC_locations) > 1:
         windows = get_peak_windows(len(seq), oriC_locations, window_size=window_size)
         n_per_oriC = []
@@ -313,7 +307,17 @@ def get_n_penalty(seq, curve_a, curve_b, oriC_locations, n_count, mode_a='max', 
         false_orders = [x for x in false_orders if x != 0]
         if len(false_orders) > 0: # This is bad: unreliable result
             false_order = True
-    return n_in_curve, false_order
+    return false_order
+
+
+def get_dist_penalty(curve_size, matched_peaks, dist_penalty_factor=10):
+    # same distance calculation as in merge_peaks()
+    penalties = []
+    for match in matched_peaks:
+        dist_1 = max(match[0], match[1]) - min(match[0], match[1])
+        dist_2 = min(match[0], match[1]) + curve_size-1 - max(match[0], match[1])
+        penalties.append(min(dist_1, dist_2))
+    return [i * dist_penalty_factor for i in penalties]
 
 
 def find_oriCs(filename, oriC_size=500, window_size=60000):
@@ -334,14 +338,18 @@ def find_oriCs(filename, oriC_size=500, window_size=60000):
     '''
     name, sequence = read_FASTA(filename)
     x, y, z, gc, n = calc_everything(sequence)
-    option         = 0
-    factor         = 100
-    # TODO: determine 'factor' based on accuracy of predictions of the 287 refseq and the average amount of N's in those genomes.
-    # e.g. 287 sequences with on average 17545.9 N's per sequence has an accuracy of 80 %
-    #      200 sequences with on average 10000.0 N's per sequence has an accuracy of 90 %
-    #      Just check if amount of N's per sequence has anything to do with the accuracy of the prediction compared to DoriC.
+
+    # Penalty factors
+    option      = 0
+    n_factor    = 100
+    o_factor    = 100
+    d_factor    = 100
+    false_order = False
+    # TODO: determine 'n_factor' based on accuracy of predictions of the 287 refseq and the average amount of N's in those genomes.
+    # e.g.  287 sequences with on average 17545.9 N's per sequence has an accuracy of 80 %
+    #       200 sequences with on average 10000.0 N's per sequence has an accuracy of 90 %
+    #       Just check if amount of N's per sequence has anything to do with the accuracy of the prediction compared to DoriC.
     # TODO: determine effect of option on accuracy of prediction with DoriC as ground truth (or the 23 known oriCs).
-    # TODO: make distance penalty funtion
 
     # z gives no information for oriC location prediction
     peaks_x,  peak_windows_x  = process_array(x , mode='min', window_size=window_size)
@@ -376,19 +384,13 @@ def find_oriCs(filename, oriC_size=500, window_size=60000):
     # Sort oriC locations based on importance and calculate penalties
     if option == 0:
         oriC_locations = sort_oriCs(x, y, oriC_locations, mode_a='min', mode_b='max', window_size=window_size)
-        n_penalty, false_order = get_n_penalty(sequence, x, y, oriC_locations, n_count=n, mode_a='min', mode_b='max', n_in_curve_factor=factor, window_size=window_size)
-    elif option == 1:
-        n_penalty, false_order = get_n_penalty(sequence, x, y, oriC_locations, n_count=n, mode_a='min', mode_b='max', n_in_curve_factor=factor, window_size=window_size)
+        false_order = get_false_order(sequence, x, y, oriC_locations, mode_a='min', mode_b='max', window_size=window_size)
     elif option == 2:
         oriC_locations = sort_oriCs(x, gc, oriC_locations, mode_a='min', mode_b='min', window_size=window_size)
-        n_penalty, false_order = get_n_penalty(sequence, x, gc, oriC_locations, n_count=n, mode_a='min', mode_b='min', n_in_curve_factor=factor, window_size=window_size)
+        false_order = get_false_order(sequence, x, gc, oriC_locations, mode_a='min', mode_b='min', window_size=window_size)
     elif option == 3:
         oriC_locations = sort_oriCs(y, gc, oriC_locations, mode_a='max', mode_b='min', window_size=window_size)
-        n_penalty, false_order = get_n_penalty(sequence, y, gc, oriC_locations, n_count=n, mode_a='max', mode_b='min', n_in_curve_factor=factor, window_size=window_size)
-    else: # option == 4
-        n_penalty, false_order = get_n_penalty(sequence, x, None, oriC_locations, n_count=n, mode_a='min', mode_b=None, n_in_curve_factor=factor, window_size=window_size)
-    if false_order:
-        reliable = -1
+        false_order = get_false_order(sequence, y, gc, oriC_locations, mode_a='max', mode_b='min', window_size=window_size)
 
     '''
     Get penalty score for how an oriC was predicted. The higher the penalty, the lower the prediction's reliability.
@@ -406,26 +408,44 @@ def find_oriCs(filename, oriC_size=500, window_size=60000):
         penalties      : list of penalty scores for each oriC
     '''
 
-    # Add option penalties
-    penalties = [n_penalty] * len(oriC_locations)
-    penalties = [x + option for x in penalties]
+    # Add penalties
+    n_penalties = [(n/len(sequence)) * n_factor] * len(oriC_locations)
+    o_penalty   = option * o_factor
+    d_penalties = get_dist_penalty(len(sequence), matched_peaks)
     oriC_ranges = get_oriC_ranges(len(sequence), oriC_locations, range_size=oriC_size)
-    return name, oriC_ranges, (x, y, z), gc, penalties, false_order
+
+    oriC_properties = {
+        'name': name,
+        'oriC_edges': oriC_ranges,
+        'oriC_middles': oriC_locations,
+        'z_curve': (x, y, z),
+        'gc_skew': gc,
+        'nod_penalties': (n_penalties, o_penalty, d_penalties),
+        'false_order': false_order
+    }
+
+    return oriC_properties
 
 
 if __name__ == '__main__':
     # oriC in min of x (Purine vs. Pyrimidine)
     # oriC in max of y (Amino vs Keto)
 
+    # HPC login:
+    # ssh hvanmeel@login1.hpc.tudelft.nl -J hvanmeel@student-linux.tudelft.net
+    # cd /tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel
+
     for fasta in os.listdir('./test_fastas'):
         file = os.path.join('test_fastas', fasta)
-        name, oriCs, Z_curve, GC_skew, QoP, false_order = find_oriCs(file)
-        plot_oriCs = [x for y in oriCs for x in y]
+        properties = find_oriCs(file)
+        name    = properties['name']
+        Z_curve = properties['z_curve']
+        GC_skew = properties['gc_skew']
 
         print(name)
-        print('QoP  :', QoP, false_order)
-        print('oriCs:', oriCs)
+        print('QoP  :', properties['nod_penalties'], properties['false_order'])
+        print('oriCs:', properties['oriC_edges'])
 
-        # pf.plot_Z_curve_2D(Z_curve[:2], [plot_oriCs, plot_oriCs], name)
-        # pf.plot_skew(GC_skew, oriCs[0], name)
+        # pf.plot_Z_curve_2D(Z_curve[:2], [properties['oriC_middles']]*2, name)
+        # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
         # pf.plot_Z_curve_3D(Z_curve, name)

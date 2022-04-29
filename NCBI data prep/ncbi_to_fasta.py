@@ -28,10 +28,8 @@ refseq/
 
 '''
 
-import os
-import gzip
-import shutil
-import tarfile
+import os, sys
+import gzip, shutil, tarfile
 from contextlib import closing
 
 os.chdir( os.path.dirname( os.path.abspath(__file__) ) )
@@ -105,8 +103,8 @@ def read_database(db_loc, method, out_loc=None):
         sample_names = os.listdir(db_loc).copy()
         for sample in sample_names:
             path     = os.path.join(db_loc, sample)
-            gz_file  = os.listdir(path)[0]              # 'accession_num.fna.gz'
-            fna_file = gz_file[:-3]                     # 'accession_num.fna'
+            gz_file  = ''.join(x for x in os.listdir(path) if '.fna.gz' in x)
+            fna_file = gz_file[:-3]
 
             with gzip.open( os.path.join(path, gz_file), 'rb' ) as f_in, open( os.path.join(out_loc, fna_file), 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
@@ -184,5 +182,5 @@ def clean_database(db_loc, out_loc=None, delete_plasmids=True, delete_contigs=Tr
 
 
 if __name__ == "__main__":
-    # db_loc = read_database(os.getcwd(), method='website', inplace=True)
-    clean_database('./NCBI data prep/refseq_15/whole_genomes', './NCBI data prep/refseq_15/chromosomes_only')
+    db_loc = read_database('/tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel', method='FTP')
+    clean_database(db_loc)
