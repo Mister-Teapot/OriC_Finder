@@ -101,6 +101,8 @@ def read_database(db_loc, method, out_loc=None):
             inplace = True
             out_loc = db_loc
         sample_names = os.listdir(db_loc).copy()
+        if 'MD5S' in sample_names:
+            sample_names.remove('MD5S')
         for sample in sample_names:
             path     = os.path.join(db_loc, sample)
             gz_file  = ''.join(x for x in os.listdir(path) if '.fna.gz' in x)
