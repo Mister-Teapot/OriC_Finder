@@ -12,14 +12,14 @@ refseq_categories = [
     'representative',
     'na'
 ]
-'na' gets all availble ones: most are not in either other category. Same result as not filling in the category
+'na': most are not in either other category. Have been entirely sequenced, but are not used as a reference and do not represent 
 
 dry_run=True to get the amount of genomes your settings would download.
 '''
 
 # ngd.download(section='refseq', file_formats='fasta', groups='bacteria', assembly_levels='complete', dry_run=True) # 26516
 # ngd.download(section='refseq', file_formats='fasta', groups='bacteria', assembly_levels='complete', refseq_categories='na', dry_run=True) # 22930
-ngd.download(section='refseq', file_formats='fasta', groups='bacteria', assembly_levels='complete', refseq_categories='representative', dry_run=True) # 3571
+# ngd.download(section='refseq', file_formats='fasta', groups='bacteria', assembly_levels='complete', refseq_categories='representative', dry_run=True) # 3571
 # ngd.download(section='refseq', file_formats='fasta', groups='bacteria', assembly_levels='chromosome', dry_run=False) # 4222
 
 # scaffolds and contigs are not eligible for this projecct.
