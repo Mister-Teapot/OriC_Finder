@@ -415,13 +415,14 @@ def find_oriCs(filename, oriC_size=500, window_size=60000):
     oriC_ranges = get_oriC_ranges(len(sequence), oriC_locations, range_size=oriC_size)
 
     oriC_properties = {
-        'name': name,
-        'oriC_edges': oriC_ranges,
-        'oriC_middles': oriC_locations,
-        'z_curve': (x, y, z),
-        'gc_skew': gc,
+        'name'         : name,
+        'oriC_edges'   : oriC_ranges,
+        'oriC_middles' : oriC_locations,
+        'z_curve'      : (x, y, z),
+        'gc_skew'      : gc,
         'nod_penalties': (n_penalties, o_penalty, d_penalties),
-        'false_order': false_order
+        'false_order'  : false_order,
+        'seq_size'     : len(sequence) # necessary for DoriC data processing
     }
 
     return oriC_properties
@@ -431,10 +432,6 @@ if __name__ == '__main__':
     # oriC in min of x (Purine vs. Pyrimidine)
     # oriC in max of y (Amino vs Keto)
 
-    # HPC login:
-    # ssh hvanmeel@login1.hpc.tudelft.nl -J hvanmeel@student-linux.tudelft.net
-    # cd /tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel
-
     for fasta in os.listdir('./test_fastas'):
         file = os.path.join('test_fastas', fasta)
         properties = find_oriCs(file)
@@ -442,9 +439,9 @@ if __name__ == '__main__':
         Z_curve = properties['z_curve']
         GC_skew = properties['gc_skew']
 
-        print(name)
-        print('QoP  :', properties['nod_penalties'], properties['false_order'])
-        print('oriCs:', properties['oriC_edges'])
+        # print(name)
+        # print('QoP  :', properties['nod_penalties'], properties['false_order'])
+        # print('oriCs:', properties['oriC_edges'])
 
         # pf.plot_Z_curve_2D(Z_curve[:2], [properties['oriC_middles']]*2, name)
         # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)

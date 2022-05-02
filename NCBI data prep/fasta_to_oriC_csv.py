@@ -1,9 +1,9 @@
-import os
+import os, sys
 # Set cwd to location of this script
 os.chdir( os.path.dirname( os.path.abspath(__file__) ) )
+sys.path.append('../OriC-Finder')
 
-from oriC_Finder import find_oriCs
-
+from OriC-Finder import oriC_Finder 
 import pandas as pd
 pd.set_option('display.width', None)
 pd.set_option('display.max_colwidth', 30)
@@ -12,30 +12,33 @@ path = os.path.join( os.getcwd(), 'refseq_15', 'bacteria')
 sample_list = os.listdir( path )
 
 df_dict = {
-    'RefSeq'  : [],
-    'Organism': [],
-    'oriC_i'  : [],
-    'oriC_f'  : [],
-    'QoP'     : [] # Quality of Prediction
+    'RefSeq'         : [],
+    'Organism'       : [],
+    'Sequence_length': [],
+    'Penalties'      : [],
+    'False_order'    : []
 }
 
 for fasta in sample_list:
-    raw_name, oriC_ranges, _, _, QoP = find_oriCs( os.path.join(path, fasta) )
+    properties = oriC_Finder.find_oriCs( os.path.join(path, fasta) )
     
     # Name processing
-    name_list = raw_name.split(' ')
+    name_list = properties['name'].split(' ')
     RefSeq = name_list[0]
     Organism = ' '.join(name_list[1:])
 
-    # OriC processing
-    for i, oriC in enumerate(oriC_ranges):
+    df_dict['RefSeq'].append(RefSeq) # RefSeq = RefSeq Accession Number
+    df_dict['Organism'].append(Organism)
+    df_dict['Sequence_length'].append(properties['seq_size'])
 
-    # Appending to dataframe
-        df_dict['RefSeq'].append(RefSeq)
-        df_dict['Organism'].append(Organism)
-        df_dict['oriC_i'].append(oriC[0])
-        df_dict['oriC_f'].append(oriC[1])
-        df_dict['QoP'].append(QoP)
+    # Quality of Prediction processing
+    df_dict['Penalties'].append(properties['nod_penalties'])
+    df_dict['False_order'].append(properties['false_order'])
+
+    # OriC processing
+    for i in range(len(properties['oriC_middles'])):
+        df_dict.update( {f'oriC_edges_{i}'  : properties['oriC_edges'][i]  } )
+        df_dict.update( {f'oriC_middles_{i}': properties['oriC_middles'][i]} )
 
 df = pd.DataFrame.from_dict(df_dict)
 
@@ -44,4 +47,4 @@ df['RefSeq'] = df['RefSeq'].str.extract(r'([^.]*)')
 
 print(df.head(10))
 
-df.to_csv(f'NCBI_oriC_{df.shape[0]}_improved.csv', index=False)
+# df.to_csv(f'NCBI_oriC_{df.shape[0]}_improved.csv', index=False)
