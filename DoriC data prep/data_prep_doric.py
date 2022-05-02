@@ -87,6 +87,8 @@ raw_oriC['Organism'] = raw_oriC['Organism'].str.replace('chromosome I', 'chromos
 oriC_sep = raw_oriC.copy() # sep = separate
 oriC_sep.to_csv('DoriC_oriC_split.csv', index=False)
 
+print(oriC_sep['RefSeq'].unique().shape)
+
 # Second dataset: merge DnaA gene if flanked by two oriC
 multi_oriC = raw_oriC[raw_oriC['RefSeq'].duplicated(keep=False) == True].copy()
 del raw_oriC
