@@ -139,8 +139,8 @@ def filter_peaks(curve, peaks, peak_windows, mode='max'):
 
         # Filter 2: Check if peaks are actually the extreme in their windows
         if len(curve)-1 in win_i and 0 in win_i:
-            up_win, down_win = split_window(win_i)
-            comparator_win = up_win if peaks[i] in up_win else down_win
+            a, b = split_window(win_i)
+            comparator_win = a if peaks[i] in a else b
         else:
             comparator_win = win_i
     
@@ -221,7 +221,7 @@ def process_array(curve, mode='max', window_size=500):
     accept_peaks = filter_peaks(curve, init_peaks, init_peak_windows, mode=mode)
     accept_windows = get_peak_windows(curve.size, accept_peaks, window_size=window_size)
     peaks_to_merge = get_peaks_to_merge(accept_peaks, accept_windows)
-
+    pf.plot_Z_curve_2D([curve], [init_peaks], 'name')
     # Necessary, because global extreme can be a plateau and there might be two peaks only 5 bp apart
     single_peaks = [x for x in accept_peaks if not any(x in y for y in peaks_to_merge)]
     merged_peaks = [merge_peaks(curve.size, to_merge[0], to_merge[1]) for to_merge in peaks_to_merge]
@@ -367,7 +367,6 @@ def find_oriCs(filename, oriC_size=500, window_size=60000):
     peaks_x,  peak_windows_x  = process_array(x , mode='min', window_size=window_size)
     peaks_y,  peak_windows_y  = process_array(y , mode='max', window_size=window_size)
     peaks_gc, peak_windows_gc = process_array(gc, mode='min', window_size=window_size)
-
     matched_peaks = match_peaks(peaks_x, peaks_y, peak_windows_x, peak_windows_y)
 
     if len(matched_peaks) == 0:
@@ -444,6 +443,7 @@ if __name__ == '__main__':
     # oriC in min of x (Purine vs. Pyrimidine)
     # oriC in max of y (Amino vs Keto)
 
+    # For testing a small folder
     # for fasta in os.listdir('./test_fastas'):
     #     file = os.path.join('test_fastas', fasta)
     #     properties = find_oriCs(file)
@@ -456,10 +456,11 @@ if __name__ == '__main__':
     #     print('oriCs:', properties['oriC_edges'])
 
     #     pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
-    #     pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
-    #     pf.plot_Z_curve_3D(Z_curve, name)
+    #     # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
+    #     # pf.plot_Z_curve_3D(Z_curve, name)
     
-    properties = find_oriCs('./test_fastas/Caulobacter_crescentus_NA1000.fna')
+    # For Testing single files
+    properties = find_oriCs('./test_fastas/Mesoplasma_tabanidae_BARC_857.fna')
     name    = properties['name']
     Z_curve = properties['z_curve']
     GC_skew = properties['gc_skew']
@@ -469,5 +470,5 @@ if __name__ == '__main__':
     print('oriCs:', properties['oriC_edges'])
 
     pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
-    # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
-    # pf.plot_Z_curve_3D(Z_curve, name)
+    pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
+    pf.plot_Z_curve_3D(Z_curve, name)
