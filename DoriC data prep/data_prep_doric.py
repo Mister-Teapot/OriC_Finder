@@ -111,8 +111,8 @@ two_oriC_merged = two_oriC.copy()
 one_oriC_concat = one_oriC.copy()
 two_oriC_concat = two_oriC.copy()
 
-one_oriC_concat["oriC_0"] = one_oriC_concat[['oriC_i', 'oriC_f']].apply(tuple, axis=1)
-two_oriC_concat["oriC_0"] = two_oriC_concat[['oriC_i', 'oriC_f']].apply(tuple, axis=1)
+one_oriC_concat["DoriC_oriC_0"] = one_oriC_concat[['oriC_i', 'oriC_f']].apply(tuple, axis=1)
+two_oriC_concat["DoriC_oriC_0"] = two_oriC_concat[['oriC_i', 'oriC_f']].apply(tuple, axis=1)
 
 one_oriC_concat.drop(['oriC_i', 'oriC_f', 'DnaA_0_i', 'DnaA_0_f'], axis=1, inplace=True)
 two_oriC_concat.drop(['oriC_i', 'oriC_f', 'DnaA_0_i', 'DnaA_0_f'], axis=1, inplace=True)
@@ -141,25 +141,25 @@ for i, sample in two_oriC.iterrows():
         two_oriC_concat_second_oriC.append('NaN')
 
 two_oriC_merged = two_oriC_merged.drop_duplicates(subset=['RefSeq'])
-two_oriC_concat = pd.concat([ two_oriC_concat, pd.DataFrame.from_dict({'oriC_1': two_oriC_concat_second_oriC}) ], axis=1).drop_duplicates(subset=['RefSeq'], keep='last')
+two_oriC_concat = pd.concat([ two_oriC_concat, pd.DataFrame.from_dict({'DoriC_oriC_1': two_oriC_concat_second_oriC}) ], axis=1).drop_duplicates(subset=['RefSeq'], keep='last')
 
 oriC_merged = pd.concat([one_oriC_merged, two_oriC_merged], axis=0)
 oriC_concat = pd.concat([one_oriC_concat, two_oriC_concat], axis=0)
 
 # Adding the organisms with >2 oriC to oriC_concat (there has to be a better way for this I'm sure, but it works)
 temp_df = {x:list(set(more_than_two_oriC[x])) for x in ['RefSeq', 'Organism', 'Lineage']}
-temp_df.update( {f'oriC_{i}': [] for i in range(max_oriCs)} )
+temp_df.update( {f'DoriC_oriC_{i}': [] for i in range(max_oriCs)} )
 for sample in more_than_two_oriC['RefSeq'].unique():
     sample_df = more_than_two_oriC[more_than_two_oriC['RefSeq'] == sample]
     oriCs = [x for x in sample_df[['oriC_i', 'oriC_f']].apply(tuple, axis=1).to_list()]
     oriCs += ['NaN'] * (max_oriCs - len(oriCs))
     for j in range(max_oriCs):
-        temp_df[f'oriC_{j}'].append(oriCs[j])
+        temp_df[f'DoriC_oriC_{j}'].append(oriCs[j])
 oriC_concat = pd.concat([oriC_concat, pd.DataFrame(temp_df)], axis=0).reset_index(drop=True)
 
 # print(oriC_sep.tail(10))
 # print(oriC_merged.tail(10)) # Does not work properly
-print(oriC_concat.tail(15))
+# print(oriC_concat.tail(15))
 
 oriC_concat.to_csv('DoriC_oriC_concat_entries.csv', index=False)
 
