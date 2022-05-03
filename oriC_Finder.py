@@ -81,26 +81,36 @@ def get_peak_windows(curve_size, peaks, window_size=500):
         up   = peaks[i] - frame #   |  <-|
         # This is for cases where the extremes are at the beginning and end of the domain
         if up < 0:
-            a_down = [j for j in range(0, up+1)]
-            b_down = [j for j in range(curve_size-1 + frame+up, curve_size)] # x[:250+down]
+            a_up = [j for j in range(0, peaks[i])]
+            b_up = [j for j in range(curve_size-1 + up, curve_size)]
         else:
-            a_down = [j for j in range(up, peaks[i]+1)] # x[down:peaks_x[i]]
-            b_down = None
+            a_up = [j for j in range(up, peaks[i]+1)]
+            b_up = None
         
         if down > curve_size-1:
-            a_up = [j for j in range(peaks[i], curve_size)] # x[peaks_x[i]:]
-            b_up = [j for j in range(0, down - curve_size)] # x[:up - len(x)-1]
+            a_down = [j for j in range(peaks[i], curve_size)]
+            b_down = [j for j in range(0, down - curve_size)]
         else:
-            a_up = [j for j in range(peaks[i], down+1)] # x[peaks_x[i]:up]
-            b_up = None
+            a_down = [j for j in range(peaks[i], down+1)]
+            b_down = None
 
-        # Checked with plot, seems to work
         up_window = a_up + b_up if b_up is not None else a_up
         down_window = a_down + b_down if b_down is not None else a_down
         up_window.extend(down_window)
         window = sorted(up_window)
         windows.append( window )
     return windows
+
+
+def split_window(window):
+    '''Splits a peak_window in two based on whether the indeces in the window are consecutive'''
+    in_a = True
+    a, b = [], []
+    for i, val in enumerate(window):
+        if i-1 > 0 and val != window[i-1] + 1:
+            in_a = False
+        a.append(val) if in_a else b.append(val)
+    return a, b
 
 
 def filter_peaks(curve, peaks, peak_windows, mode='max'):
@@ -128,9 +138,15 @@ def filter_peaks(curve, peaks, peak_windows, mode='max'):
                     rejected_peaks.extend( np.where(curve == max(curve[peaks[i]], curve[peaks[j]]) )[0].tolist() )
 
         # Filter 2: Check if peaks are actually the extreme in their windows
-        if mode == 'max' and np.max( curve[win_i] ) > curve[peaks[i]]:
+        if len(curve)-1 in win_i and 0 in win_i:
+            up_win, down_win = split_window(win_i)
+            comparator_win = up_win if peaks[i] in up_win else down_win
+        else:
+            comparator_win = win_i
+    
+        if mode == 'max' and np.max( curve[comparator_win] ) > curve[peaks[i]]:
                 rejected_peaks.append(peaks[i])
-        elif mode == 'min' and np.min( curve[win_i] ) < curve[peaks[i]]:
+        elif mode == 'min' and np.min( curve[comparator_win] ) < curve[peaks[i]]:
                 rejected_peaks.append(peaks[i])
 
     # Create list of peaks that passed both filters
@@ -245,7 +261,7 @@ def sort_oriCs(curve_a, curve_b, oriC_locations, mode_a='max', mode_b='max', win
             prominences.append( (i, avg) )
     prominences.sort(reverse=True, key=lambda x: x[1])
     return [oriC_locations[x[0]] for x in prominences]
-        
+
 
 def get_oriC_ranges(seq_len, oriC_locations, range_size=500):
     """Get the start and end index of the given locations"""
@@ -256,11 +272,7 @@ def get_oriC_ranges(seq_len, oriC_locations, range_size=500):
     for oriC_window in full_oriC_windows:
         if seq_len-1 in oriC_window and 0 in oriC_window:
             # oriC on domain borders -> split into a and b to work with.
-            in_a = True
-            a, b = [], []
-            for i, val in enumerate(oriC_window):
-                in_a = False if i-1 > 0 and val != oriC_window[i-1] + 1 else True
-                a.append(val) if in_a else b.append(val)
+            a, b = split_window(oriC_window)
             # oriC_ranges.append( (min(a), max(a)) )
             # oriC_ranges.append( (min(b), max(b)) )
             oriC_ranges.append( (min(b), max(a)) )
@@ -432,17 +444,30 @@ if __name__ == '__main__':
     # oriC in min of x (Purine vs. Pyrimidine)
     # oriC in max of y (Amino vs Keto)
 
-    for fasta in os.listdir('./test_fastas'):
-        file = os.path.join('test_fastas', fasta)
-        properties = find_oriCs(file)
-        name    = properties['name']
-        Z_curve = properties['z_curve']
-        GC_skew = properties['gc_skew']
+    # for fasta in os.listdir('./test_fastas'):
+    #     file = os.path.join('test_fastas', fasta)
+    #     properties = find_oriCs(file)
+    #     name    = properties['name']
+    #     Z_curve = properties['z_curve']
+    #     GC_skew = properties['gc_skew']
 
-        # print(name)
-        # print('QoP  :', properties['nod_penalties'], properties['false_order'])
-        # print('oriCs:', properties['oriC_edges'])
+    #     print(name)
+    #     print('QoP  :', properties['nod_penalties'], properties['false_order'])
+    #     print('oriCs:', properties['oriC_edges'])
 
-        # pf.plot_Z_curve_2D(Z_curve[:2], [properties['oriC_middles']]*2, name)
-        # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
-        # pf.plot_Z_curve_3D(Z_curve, name)
+    #     pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
+    #     pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
+    #     pf.plot_Z_curve_3D(Z_curve, name)
+    
+    properties = find_oriCs('./test_fastas/Caulobacter_crescentus_NA1000.fna')
+    name    = properties['name']
+    Z_curve = properties['z_curve']
+    GC_skew = properties['gc_skew']
+
+    print(name)
+    print('QoP  :', properties['nod_penalties'], properties['false_order'])
+    print('oriCs:', properties['oriC_edges'])
+
+    pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
+    # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
+    # pf.plot_Z_curve_3D(Z_curve, name)
