@@ -64,8 +64,8 @@ def database_oriC_prediction(path, to_csv=None):
     df['RefSeq'] = df['RefSeq'].str.extract(r'([^.]*)')
 
     if to_csv is not None:
-        df.to_csv(to_csv + f'/NCBI_oriC_{df.shape[0]}_improved.csv', index=False)
+        df.to_csv(to_csv + f'/NCBI_oriC_{df.shape[0]}.csv', index=False)
     return df
 
 if __name__ == '__main__':
-    _ = database_oriC_prediction('NCBI data prep/refseq_15/chromosomes_only', to_csv='NCBI data prep/refseq_15')
+    _ = database_oriC_prediction(path='/tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel/refseq_3k_set/bacteria', to_csv='/tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel/refseq_3k_set')
