@@ -64,16 +64,8 @@ def database_oriC_prediction(path, to_csv=True):
     # Removing version numbers for now
     df['RefSeq'] = df['RefSeq'].str.extract(r'([^.]*)')
 
-    # # Setting columns to proper types
-    # df = df.astype({'Sequence_length':'float', 'Penalties':'tuple', 'False_order':'bool'})
-    # oriC_cols = [i for i in df.columns if 'oriC' in i]
-    # most_oriC = int(sorted(oriC_cols, key=lambda x:x[-1], reverse=True)[0][-1]) + 1
-    # for i in range(most_oriC):
-    #     df = df.astype({f'oriC_edges_{i}':'tuple', f'oriC_middles_{i}':'float'})
-
-    print(df.head(10))
     if to_csv:
-        df.to_csv(f'NCBI_oriC_{df.shape[0]}_improved.csv', index=False)
+        df.to_csv(f'NCBI data prep/NCBI_oriC_{df.shape[0]}_improved.csv', index=False)
     return df
 
 if __name__ == '__main__':

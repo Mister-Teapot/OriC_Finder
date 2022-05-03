@@ -10,19 +10,9 @@ import os
 # Set cwd to location of this script
 os.chdir( os.path.dirname( os.path.abspath(__file__) ) )
 
-'''
-oriFinder will always produce a ori 250 nucleotides upstream of the skewplot
-minimum and 700 nucleotides downstream. This may be possible to further optimise
-using DnaA-box regions.The problem there is that the DnaA-box region of many
-organisms are unknown.
-
-This script aims to evaluate the performance of oriFinder against the oriC
-regions predicted and compiled in DoriC.
-'''
-
 
 # Tianjin University BioInformatics Centre (tubic) a.k.a. the people who made DoriC
-# Copied Katelyn's processing of the csv with a few modifications
+# Used Katelyn's processing of the csv to a certain point
 raw_oriC = pd.read_csv('tubic_bacteria.csv')
 
 # Remove duplicates
@@ -71,10 +61,10 @@ raw_oriC['Lineage'] = raw_oriC['Lineage'].str.rstrip('.')
 # NOT removing multichromosomal organisms -> Organisms with multiple chromosomes already have separate entries
 
 # Renaming chromosomes from Roman numerals to Arabic
-raw_oriC['Organism'] = raw_oriC['Organism'].str.replace('chromosome IV', 'chromosome 4', regex = True)
+raw_oriC['Organism'] = raw_oriC['Organism'].str.replace('chromosome I',   'chromosome 1', regex = True)
+raw_oriC['Organism'] = raw_oriC['Organism'].str.replace('chromosome II',  'chromosome 2', regex = True)
 raw_oriC['Organism'] = raw_oriC['Organism'].str.replace('chromosome III', 'chromosome 3', regex = True)
-raw_oriC['Organism'] = raw_oriC['Organism'].str.replace('chromosome II', 'chromosome 2', regex = True)
-raw_oriC['Organism'] = raw_oriC['Organism'].str.replace('chromosome I', 'chromosome 1', regex = True)
+raw_oriC['Organism'] = raw_oriC['Organism'].str.replace('chromosome IV',  'chromosome 4', regex = True)
 
 #####################################################################################################################################
 ### Katelyn found that organisms with multiple oriC usually flank the DnaA region and wondered whether they were
@@ -90,25 +80,25 @@ oriC_sep.to_csv('DoriC_oriC_seperate_entries.csv', index=False)
 
 # Second dataset: oriC_merged : merge DnaA gene if flanked by two oriC
 # Third dataset : oriC_concat : remove DnaA regions and put all oriC for an organism in one row
-one_oriC = raw_oriC.copy().drop_duplicates(subset=['RefSeq'], keep=False)        # All organisms with 1 oriC
-multi_oriC  = raw_oriC[raw_oriC['RefSeq'].duplicated(keep=False) == True].copy() # All organisms with > 1 oriCs
-del raw_oriC
+one_oriC = raw_oriC.copy().drop_duplicates(subset=['RefSeq'], keep=False)                           # All organisms with 1 oriC
+more_than_one_oriC = raw_oriC[raw_oriC['RefSeq'].duplicated(keep=False) == True].copy()             # All organisms with >1 oriCs
 
 # Remove all organisms with >2 oriCs (too hard to merge)
-dups_refseq = multi_oriC.pivot_table(columns=['RefSeq'], aggfunc='size')
-more_than_two_oriC = dups_refseq[dups_refseq > 2]
-two_oriC = multi_oriC.copy()                                                     # All organisms with 2 oriCs
-del multi_oriC
-# print(f'There are {len(more_than_two_oriC.values.tolist())} organsims for which DoriC predicted more than two oriC')
-# print(f'I will delete these, because there are only 5 and the merging with flanking DnaA makes my brain hurt.')
+dups_refseq = more_than_one_oriC.pivot_table(columns=['RefSeq'], aggfunc='size')
+more_than_two_oriC_list = dups_refseq[dups_refseq > 2].index
+max_oriCs = max(dups_refseq)
+
+two_oriC = more_than_one_oriC[~more_than_one_oriC['RefSeq'].isin(more_than_two_oriC_list)]          # All organisms with 2 oriCs
+more_than_two_oriC = more_than_one_oriC[more_than_one_oriC['RefSeq'].isin(more_than_two_oriC_list)] # All organisms with >2 oriCs (only 5 organisms)
+
+del raw_oriC
+del more_than_one_oriC
 
 # We're only merging based on the first DnaA box
 del_cols = [f'DnaA_{i}_i' for i in range(1, 7)] + [f'DnaA_{i}_f' for i in range(1, 7)] + ['OriC sequence']
 one_oriC.drop(del_cols, axis=1, inplace=True)
 two_oriC.drop(del_cols, axis=1, inplace=True)
-
-for i in more_than_two_oriC.keys().to_list():
-    two_oriC = two_oriC[two_oriC['RefSeq'] != i]
+more_than_two_oriC.drop(del_cols, axis=1, inplace=True)
 
 # Changing oriC_f to DnaA_f if oriC_f flows into DnaA_i : two_oriC_merged df
 # Giving organisms with 2 oriCs one single row for      : two_oriC_concat df
@@ -118,21 +108,21 @@ two_oriC.reset_index(inplace=True, drop=True)
 one_oriC_merged = one_oriC.copy()
 two_oriC_merged = two_oriC.copy()
 
-print(two_oriC_merged.tail(10))
-print()
-
 one_oriC_concat = one_oriC.copy()
 two_oriC_concat = two_oriC.copy()
 
-one_oriC_concat["oriC"] = one_oriC_concat[['oriC_i', 'oriC_f']].apply(tuple, axis=1)
-two_oriC_concat["oriC"] = two_oriC_concat[['oriC_i', 'oriC_f']].apply(tuple, axis=1)
+one_oriC_concat["oriC_0"] = one_oriC_concat[['oriC_i', 'oriC_f']].apply(tuple, axis=1)
+two_oriC_concat["oriC_0"] = two_oriC_concat[['oriC_i', 'oriC_f']].apply(tuple, axis=1)
+
 one_oriC_concat.drop(['oriC_i', 'oriC_f', 'DnaA_0_i', 'DnaA_0_f'], axis=1, inplace=True)
 two_oriC_concat.drop(['oriC_i', 'oriC_f', 'DnaA_0_i', 'DnaA_0_f'], axis=1, inplace=True)
+more_than_two_oriC.drop(['DnaA_0_i', 'DnaA_0_f'], axis=1, inplace=True)
 two_oriC_concat_second_oriC = [] # ['NaN', (), 'NaN', (), ...]
 
 for i, sample in two_oriC.iterrows():
     if i > 0 and two_oriC.iloc[i-1]['RefSeq'] == sample['RefSeq']:
         # TWO_ORIC_MERGED
+        ##### NOTE: This does not work properly. Leaving it be for now, because it's not directly part of the project.
         # Option 1: oriC_1 -> DnaA -> oriC_2
         if sample['DnaA_0_i'] - 1 == sample['oriC_f'] and two_oriC.iloc[i-1]['oriC_i'] == two_oriC.iloc[i-1]['DnaA_0_f'] + 1:
             two_oriC_merged.loc[two_oriC_merged['RefSeq'] == sample['RefSeq'], 'oriC_i'] = sample['oriC_i']
@@ -151,12 +141,26 @@ for i, sample in two_oriC.iterrows():
         two_oriC_concat_second_oriC.append('NaN')
 
 two_oriC_merged = two_oriC_merged.drop_duplicates(subset=['RefSeq'])
-two_oriC_concat = pd.concat([ two_oriC_concat, pd.DataFrame.from_dict({'oriC 2': two_oriC_concat_second_oriC}) ], axis=1).drop_duplicates(subset=['RefSeq'], keep='last')
+two_oriC_concat = pd.concat([ two_oriC_concat, pd.DataFrame.from_dict({'oriC_1': two_oriC_concat_second_oriC}) ], axis=1).drop_duplicates(subset=['RefSeq'], keep='last')
 
 oriC_merged = pd.concat([one_oriC_merged, two_oriC_merged], axis=0)
 oriC_concat = pd.concat([one_oriC_concat, two_oriC_concat], axis=0)
 
-print(oriC_merged.tail(10))
-# print(oriC_concat)
+# Adding the organisms with >2 oriC to oriC_concat (there has to be a better way for this I'm sure, but it works)
+temp_df = {x:list(set(more_than_two_oriC[x])) for x in ['RefSeq', 'Organism', 'Lineage']}
+temp_df.update( {f'oriC_{i}': [] for i in range(max_oriCs)} )
+for sample in more_than_two_oriC['RefSeq'].unique():
+    sample_df = more_than_two_oriC[more_than_two_oriC['RefSeq'] == sample]
+    oriCs = [x for x in sample_df[['oriC_i', 'oriC_f']].apply(tuple, axis=1).to_list()]
+    oriCs += ['NaN'] * (max_oriCs - len(oriCs))
+    for j in range(max_oriCs):
+        temp_df[f'oriC_{j}'].append(oriCs[j])
+oriC_concat = pd.concat([oriC_concat, pd.DataFrame(temp_df)], axis=0).reset_index(drop=True)
+
+# print(oriC_sep.tail(10))
+# print(oriC_merged.tail(10)) # Does not work properly
+print(oriC_concat.tail(15))
+
+oriC_concat.to_csv('DoriC_oriC_concat_entries.csv', index=False)
 
 # Can continue work on this once on the cluster.

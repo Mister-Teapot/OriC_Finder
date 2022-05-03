@@ -22,4 +22,4 @@ count = []
 for fasta in os.listdir(db_loc):
     _, single_count = read_FASTA(os.path.join(db_loc, fasta))
     count.append(single_count)
-print('Average N-count in 287 representative refseq genomes: ', sum(count)/len(count))
+print('Average N-count in 287 representative refseq genomes:', sum(count)/len(count))
