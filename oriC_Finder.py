@@ -221,7 +221,7 @@ def process_array(curve, mode='max', window_size=500):
     accept_peaks = filter_peaks(curve, init_peaks, init_peak_windows, mode=mode)
     accept_windows = get_peak_windows(curve.size, accept_peaks, window_size=window_size)
     peaks_to_merge = get_peaks_to_merge(accept_peaks, accept_windows)
-    pf.plot_Z_curve_2D([curve], [init_peaks], 'name')
+
     # Necessary, because global extreme can be a plateau and there might be two peaks only 5 bp apart
     single_peaks = [x for x in accept_peaks if not any(x in y for y in peaks_to_merge)]
     merged_peaks = [merge_peaks(curve.size, to_merge[0], to_merge[1]) for to_merge in peaks_to_merge]
