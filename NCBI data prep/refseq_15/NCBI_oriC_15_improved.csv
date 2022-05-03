@@ -1,15 +1,15 @@
 RefSeq,Organism,Sequence_length,Penalties,False_order,oriC_edges_0,oriC_middles_0,oriC_edges_1,oriC_middles_1,oriC_edges_2,oriC_middles_2
 NC_000913,"Escherichia coli str. K-12 substr. MG1655, complete genome",4641652,"([0.0], 0, [97610])",False,"(3928169, 3928669)",3928419,,,,
-NC_002516,"Pseudomonas aeruginosa PAO1, complete genome",6264404,"([0.0, 0.0, 0.0], 0, [111870, 219070, 173650])",False,"(6247233, 6247733)",6247483,"(6263781, 6264281)",6264031.0,"(5721641, 5722141)",5721891.0
+NC_002516,"Pseudomonas aeruginosa PAO1, complete genome",6264404,"([0.0, 0.0], 0, [111870, 173650])",False,"(6247233, 6247733)",6247483,"(5721641, 5722141)",5721891.0,,
 NC_004337,"Shigella flexneri 2a str. 301 chromosome, complete genome",4607202,"([0.00013023088633838935, 0.00013023088633838935], 0, [248430, 57130])",False,"(3818397, 3818897)",3818647,"(4463563, 4464063)",4463813.0,,
 NC_003197,"Salmonella enterica subsp. enterica serovar Typhimurium str. LT2, complete genome",4857450,"([0.0], 0, [80260])",False,"(4087561, 4088061)",4087811,,,,
 NC_002971,"Coxiella burnetii RSA 493, complete genome",1995488,"([0.0], 0, [363790])",False,"(17795, 18295)",18045,,,,
 NC_000117,"Chlamydia trachomatis D/UW-3/CX chromosome, complete genome",1042519,"([0.0], 0, [11030])",False,"(719550, 720050)",719800,,,,
-NC_002695,"Escherichia coli O157:H7 str. Sakai DNA, complete genome",5498578,"([0.0, 0.0, 0.0], 0, [97500, 132300, 143740])",False,"(4721744, 4722244)",4721994,"(3324183, 3324683)",3324433.0,"(6949, 7449)",7199.0
+NC_002695,"Escherichia coli O157:H7 str. Sakai DNA, complete genome",5498578,"([0.0, 0.0, 0.0], 0, [97500, 132300, 143740])",False,"(4721744, 4722244)",4721994,"(6949, 7449)",7199.0,"(3324183, 3324683)",3324433.0
 NC_000964,Bacillus subtilis subsp. subtilis str. 168 complete genome,4215606,"([0.0], 0, [98200])",False,"(4609, 5109)",4859,,,,
-NC_002163,"Campylobacter jejuni subsp. jejuni NCTC 11168 = ATCC 700819 chromosome, complete genome",1641481,"([0.0, 0.0], 0, [47990, 241050])",True,"(189767, 190267)",190017,"(2150, 2650)",2400.0,,
-NC_007795,"Staphylococcus aureus subsp. aureus NCTC 8325 chromosome, complete genome",2821361,"([3.5443886833340365e-05], 200, [40])",False,"(2821106, 2821360)",2821356,,,,
-NC_011916,"Caulobacter crescentus NA1000, complete genome",4042929,"([0.0, 0.0], 200, [540030, 50220])",True,"(55931, 56431)",56181,"(3614050, 3614550)",3614300.0,,
+NC_002163,"Campylobacter jejuni subsp. jejuni NCTC 11168 = ATCC 700819 chromosome, complete genome",1641481,"([0.0, 0.0], 0, [342920, 241050])",False,"(1624085, 1624585)",1624335,"(189767, 190267)",190017.0,,
+NC_007795,"Staphylococcus aureus subsp. aureus NCTC 8325 chromosome, complete genome",2821361,"([3.5443886833340365e-05], 0, [59460])",False,"(2818135, 2818635)",2818385,,,,
+NC_011916,"Caulobacter crescentus NA1000, complete genome",4042929,"([0.0], 0, [23070])",False,"(4038455, 4038955)",4038705,,,,
 NC_016603,"Acinetobacter pittii PHEA-2 chromosome, complete genome",3862530,"([0.0, 0.0], 0, [477930, 98030])",False,"(3153651, 3154151)",3153901,"(23681, 24181)",23931.0,,
 NC_000962,"Mycobacterium tuberculosis H37Rv, complete genome",4411532,"([0.0], 0, [390])",False,"(4410972, 4411472)",4411222,,,,
 NC_003210,"Listeria monocytogenes EGD-e chromosome, complete genome",2944528,"([0.0], 0, [28600])",False,"(2942809, 2943309)",2943059,,,,

@@ -12,10 +12,10 @@ pd.set_option('display.width', None)
 pd.set_option('display.max_colwidth', 30)
 
 
-def database_oriC_prediction(path, to_csv=True):
+def database_oriC_prediction(path, to_csv=None):
     """
     Predict oriCs for database at given path.
-    Compiles everything in a CSV-file if to_csv=True.
+    Compiles everything in a CSV-file in the given folder location.
     Returns pandas.DataFrame
     """
 
@@ -57,16 +57,15 @@ def database_oriC_prediction(path, to_csv=True):
                 df_dict[f'oriC_edges_{i}'].append(np.nan)
                 df_dict[f'oriC_middles_{i}'].append(np.nan)
 
-
     df = pd.DataFrame.from_dict(df_dict)
     df.dropna(how='all', axis=1, inplace=True)
 
     # Removing version numbers for now
     df['RefSeq'] = df['RefSeq'].str.extract(r'([^.]*)')
 
-    if to_csv:
-        df.to_csv(f'NCBI data prep/NCBI_oriC_{df.shape[0]}_improved.csv', index=False)
+    if to_csv is not None:
+        df.to_csv(to_csv + f'/NCBI_oriC_{df.shape[0]}_improved.csv', index=False)
     return df
 
 if __name__ == '__main__':
-    _ = database_oriC_prediction('NCBI data prep/refseq_15/chromosomes_only')
+    _ = database_oriC_prediction('NCBI data prep/refseq_15/chromosomes_only', to_csv='NCBI data prep/refseq_15')
