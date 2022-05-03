@@ -1,50 +1,80 @@
+# Standard imports
 import os, sys
-# Set cwd to location of this script
-os.chdir( os.path.dirname( os.path.abspath(__file__) ) )
-sys.path.append('../OriC-Finder')
-
-from OriC-Finder import oriC_Finder 
 import pandas as pd
+import numpy as np
+
+# Local imports
+sys.path.append('../OriC_Finder')
+from oriC_Finder import find_oriCs
+
+# Pandas printing options
 pd.set_option('display.width', None)
 pd.set_option('display.max_colwidth', 30)
 
-path = os.path.join( os.getcwd(), 'refseq_15', 'bacteria')
-sample_list = os.listdir( path )
 
-df_dict = {
-    'RefSeq'         : [],
-    'Organism'       : [],
-    'Sequence_length': [],
-    'Penalties'      : [],
-    'False_order'    : []
-}
+def database_oriC_prediction(path, to_csv=True):
+    """
+    Predict oriCs for database at given path.
+    Compiles everything in a CSV-file if to_csv=True.
+    Returns pandas.DataFrame
+    """
 
-for fasta in sample_list:
-    properties = oriC_Finder.find_oriCs( os.path.join(path, fasta) )
-    
-    # Name processing
-    name_list = properties['name'].split(' ')
-    RefSeq = name_list[0]
-    Organism = ' '.join(name_list[1:])
+    sample_list = os.listdir( path )
+    df_dict = {
+        'RefSeq'         : [],
+        'Organism'       : [],
+        'Sequence_length': [],
+        'Penalties'      : [],
+        'False_order'    : []
+    }
+    max_orics = 10 # Assumption: No more than 10 oriC for a single organism are predicted
+    for i in range(max_orics):
+        df_dict.update( {f'oriC_edges_{i}': []} )
+        df_dict.update( {f'oriC_middles_{i}': []} )
 
-    df_dict['RefSeq'].append(RefSeq) # RefSeq = RefSeq Accession Number
-    df_dict['Organism'].append(Organism)
-    df_dict['Sequence_length'].append(properties['seq_size'])
+    for fasta in sample_list:
+        properties = find_oriCs( os.path.join(path, fasta) )
+        
+        # Name processing
+        name_list = properties['name'].split(' ')
+        RefSeq = name_list[0]
+        Organism = ' '.join(name_list[1:])
 
-    # Quality of Prediction processing
-    df_dict['Penalties'].append(properties['nod_penalties'])
-    df_dict['False_order'].append(properties['false_order'])
+        df_dict['RefSeq'].append(RefSeq) # RefSeq = RefSeq Accession Number
+        df_dict['Organism'].append(Organism)
+        df_dict['Sequence_length'].append(properties['seq_size'])
 
-    # OriC processing
-    for i in range(len(properties['oriC_middles'])):
-        df_dict.update( {f'oriC_edges_{i}'  : properties['oriC_edges'][i]  } )
-        df_dict.update( {f'oriC_middles_{i}': properties['oriC_middles'][i]} )
+        # Quality of Prediction processing
+        df_dict['Penalties'].append(properties['nod_penalties'])
+        df_dict['False_order'].append(properties['false_order'])
 
-df = pd.DataFrame.from_dict(df_dict)
+        # OriC processing
+        for i in range(max_orics):
+            if i < len(properties['oriC_middles']):
+                df_dict[f'oriC_edges_{i}'].append(properties['oriC_edges'][i])
+                df_dict[f'oriC_middles_{i}'].append(properties['oriC_middles'][i])
+            else:
+                df_dict[f'oriC_edges_{i}'].append(np.nan)
+                df_dict[f'oriC_middles_{i}'].append(np.nan)
 
-# Removing version numbers for now
-df['RefSeq'] = df['RefSeq'].str.extract(r'([^.]*)')
 
-print(df.head(10))
+    df = pd.DataFrame.from_dict(df_dict)
+    df.dropna(how='all', axis=1, inplace=True)
 
-# df.to_csv(f'NCBI_oriC_{df.shape[0]}_improved.csv', index=False)
+    # Removing version numbers for now
+    df['RefSeq'] = df['RefSeq'].str.extract(r'([^.]*)')
+
+    # # Setting columns to proper types
+    # df = df.astype({'Sequence_length':'float', 'Penalties':'tuple', 'False_order':'bool'})
+    # oriC_cols = [i for i in df.columns if 'oriC' in i]
+    # most_oriC = int(sorted(oriC_cols, key=lambda x:x[-1], reverse=True)[0][-1]) + 1
+    # for i in range(most_oriC):
+    #     df = df.astype({f'oriC_edges_{i}':'tuple', f'oriC_middles_{i}':'float'})
+
+    print(df.head(10))
+    if to_csv:
+        df.to_csv(f'NCBI_oriC_{df.shape[0]}_improved.csv', index=False)
+    return df
+
+if __name__ == '__main__':
+    _ = database_oriC_prediction('NCBI data prep/refseq_15/chromosomes_only')
