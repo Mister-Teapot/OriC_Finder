@@ -1,8 +1,8 @@
 # Libraries
-from math import factorial
 import scipy.signal as sp
 import numpy as np
 import os
+from itertools import combinations
 
 # Self-made module
 import plotting_functions as pf
@@ -127,16 +127,16 @@ def filter_peaks(curve, peaks, peak_windows, mode='max'):
         accepted_peaks : peaks that passed both filters
     """
     rejected_peaks = []
-    for i, win_i in enumerate(peak_windows):
+    for(i, win_i), (j, win_j) in combinations(enumerate(peak_windows), 2):
         # Filter 1: Check if any other windows intersecting the window of peak i
-        for j, win_j in enumerate(peak_windows):
-            if win_i != win_j and curve[peaks[i]] != curve[peaks[j]] and len(set(win_i).intersection(win_j)) > 0:
-                # Either peaks at the beginning and end of the DNA sequence or a peak found by sp.find_peaks() that is very close to the global min/max 
-                if mode == 'max':
-                    rejected_peaks.extend( np.where(curve == min(curve[peaks[i]], curve[peaks[j]]) )[0].tolist() )
-                elif mode == 'min':
-                    rejected_peaks.extend( np.where(curve == max(curve[peaks[i]], curve[peaks[j]]) )[0].tolist() )
+        if win_i != win_j and curve[peaks[i]] != curve[peaks[j]] and len(set(win_i).intersection(win_j)) > 0:
+            # Either peaks at the beginning and end of the DNA sequence or a peak found by sp.find_peaks() that is very close to the global min/max 
+            if mode == 'max':
+                rejected_peaks.extend( np.where(curve == min(curve[peaks[i]], curve[peaks[j]]) )[0].tolist() )
+            elif mode == 'min':
+                rejected_peaks.extend( np.where(curve == max(curve[peaks[i]], curve[peaks[j]]) )[0].tolist() )
 
+    for i, win_i in enumerate(peak_windows):
         # Filter 2: Check if peaks are actually the extreme in their windows
         if len(curve)-1 in win_i and 0 in win_i:
             a, b = split_window(win_i)
@@ -456,11 +456,11 @@ if __name__ == '__main__':
     #     print('oriCs:', properties['oriC_edges'])
 
     #     pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
-    #     # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
+    #     pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
     #     # pf.plot_Z_curve_3D(Z_curve, name)
     
-    # For Testing single files
-    properties = find_oriCs('./test_fastas/Mesoplasma_tabanidae_BARC_857.fna')
+    # # For Testing single files
+    properties = find_oriCs('./test_fastas/Escherichia_coli_K_12.fna')
     name    = properties['name']
     Z_curve = properties['z_curve']
     GC_skew = properties['gc_skew']
@@ -470,5 +470,5 @@ if __name__ == '__main__':
     print('oriCs:', properties['oriC_edges'])
 
     pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
-    pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
-    pf.plot_Z_curve_3D(Z_curve, name)
+    # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
+    # pf.plot_Z_curve_3D(Z_curve, name)
