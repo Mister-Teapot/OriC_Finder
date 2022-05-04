@@ -3,9 +3,6 @@ from ast import literal_eval
 from itertools import product
 import pandas as pd
 
-# Set cwd to location of this script
-os.chdir( os.path.dirname( os.path.abspath(__file__) ) )
-
 # Pandas printing options
 pd.set_option('display.width', None)
 pd.set_option('display.max_colwidth', 15)
@@ -26,14 +23,18 @@ def make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv):
                 in_both_df[j].append( sample[j] )
             for j in DoriC_df.columns.to_list():
                 in_both_df[j].append( DoriC_df.loc[DoriC_df['RefSeq'] == sample['RefSeq'], j].values[0] ) # Series.values -> ['element'], very annoying
-
-    comparator_df = pd.DataFrame(in_both_df).head()
+    
+    comparator_df = pd.DataFrame(in_both_df)
     comparator_df.to_csv(comparator_csv, index=False)
 
     return comparator_df
 
-def compare_dbs(df=None, csv=None):
-    '''Compares results. Results can be loaded from a pandas.DataFrame or csv.'''
+def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False):
+    '''
+    Compares results. Results can be loaded from a pandas.DataFrame OR csv.
+    info       : if str, writes a text_file to the given location with some info on the analysis.
+    print_info : if True, prints the same info that was written to 'info' with print-statements for quick reading.
+    '''
 
     if df is None and csv is None:
         raise KeyError('Must load a pandas.DataFrame or CSV file.')
@@ -44,6 +45,7 @@ def compare_dbs(df=None, csv=None):
         df = pd.read_csv(csv)
 
     # Z_curve_df['Penalties'] = Z_curve_df['Penalties'].map(literal_eval) # For converting tuple-strings to tuple objects
+
     # Compare predictions (Assuming DoriC as ground truth for now)
     num_of_predictions = [0, 0] # [more oriC in DoriC, more oriC by mine]
     for i, sample_original in df.iterrows():
@@ -57,13 +59,27 @@ def compare_dbs(df=None, csv=None):
             num_of_predictions[0] += 1
         elif len(D_oriC_cols) < len(Z_oriC_cols):
             num_of_predictions[1] += 1
-        for oriC_D, oriC_Z in product(D_oriC_cols, Z_oriC_cols):
-            ...
+        # for oriC_D, oriC_Z in product(D_oriC_cols, Z_oriC_cols):
+        #     ...
+
+    info_lines = []
+    info_lines.append( f'There were {df.shape[0]} organisms.' )
+    info_lines.append( f'\t{df.shape[0] - sum(num_of_predictions)} times both databases predicted the same amount of oriCs.' )
+    info_lines.append( f'\t{num_of_predictions[0]} times DoriC predicted more oriCs.' )
+    info_lines.append( f'\t{num_of_predictions[1]} times mine predicted more oriCs.' )
+
+    if info_file_path is not None:
+        with open(info_file_path, 'w') as fh:
+            fh.write('\n'.join(info_lines))
+    if print_info:
+        print('\n'.join(info_lines))
 
 if __name__ == '__main__':
-    Z_curve_csv    = 'NCBI data prep/refseq_15/NCBI_oriC_15_improved.csv'
+    Z_curve_csv    = 'NCBI data prep/299+15_merged.csv'
     DoriC_csv      = 'DoriC data prep/DoriC_oriC_concat_entries.csv'
-    comparator_csv = 'Both_predictions.csv'
+
+    comparator_csv = 'Both_predictions_out_of_299+15.csv'
+    info_file_path = 'test_info_file.txt'
 
     comparator_df = make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv=comparator_csv)
-    compare_dbs(df=comparator_df) # csv=comparator_csv
+    compare_dbs(df=comparator_df, info_file_path=info_file_path, print_info=True) # csv=comparator_csv
