@@ -1,5 +1,6 @@
 # OriC_Finder
 Python scripts that predict and plot the location of the origin of replication (oriC) of circular bacterial genomes based on Z-curve and GC-skew analysis.
+
 **NOTE**: This is a work in progress.
 
 ### Order of operation
@@ -18,7 +19,7 @@ These scripts prepare the NCBI data for analysis. Each script has docs-strings f
 3. `fasta_to_oriC_csv.py`: Predicts the oriC(s) for the whole dataset.
 
 #### Comparison
-Once both the DoriC and NCBI datasets have been processed, they can be compared. This is done with `oirC_comparison.py`.
+Once both the DoriC and NCBI datasets have been processed, they can be compared. This is done with `oriC_comparison.py`.
 
 ### `oriC_Finder.py`
 This script predicts the origin of replication for circular bacterial DNA. It makes use of a combination of Z-curve and GC-skew analysis.
