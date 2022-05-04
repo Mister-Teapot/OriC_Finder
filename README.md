@@ -1,5 +1,6 @@
 # OriC_Finder
 Python scripts that predict and plot the location of the origin of replication (oriC) of circular bacterial genomes based on Z-curve and GC-skew analysis.
+**NOTE**: This is a work in progress.
 
 ### Order of operation
 The scripts are excecuted in a specific order to work properly, but also work independently, so that each script can serve as a checkpoint.
