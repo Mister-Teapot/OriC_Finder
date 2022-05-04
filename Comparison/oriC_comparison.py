@@ -1,4 +1,4 @@
-import os
+import os, sys
 from ast import literal_eval
 from itertools import product
 import pandas as pd
@@ -6,6 +6,14 @@ import pandas as pd
 # Pandas printing options
 pd.set_option('display.width', None)
 pd.set_option('display.max_colwidth', 15)
+
+# Self-made module
+#   Local path
+sys.path.append('../OriC_Finder')
+#   Cluster path
+# sys.path.append('/tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel/OriC_Finder/')
+from oriC_Finder import get_peak_windows, merge_peaks
+
 
 def make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv):
     '''Merges Z_curve_csv and DoriC_csv into one csv and/or dataframe for comparison with compare_dbs'''
@@ -59,8 +67,9 @@ def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False):
             num_of_predictions[0] += 1
         elif len(D_oriC_cols) < len(Z_oriC_cols):
             num_of_predictions[1] += 1
-        # for oriC_D, oriC_Z in product(D_oriC_cols, Z_oriC_cols):
-        #     ...
+
+        for oriC_D_col, oriC_Z_col in product(D_oriC_cols, Z_oriC_cols):
+            print(literal_eval(sample[oriC_D_col]))
 
     info_lines = []
     info_lines.append( f'There were {df.shape[0]} organisms.' )
@@ -78,8 +87,8 @@ if __name__ == '__main__':
     Z_curve_csv    = 'NCBI data prep/299+15_merged.csv'
     DoriC_csv      = 'DoriC data prep/DoriC_oriC_concat_entries.csv'
 
-    comparator_csv = 'Both_predictions_out_of_299+15.csv'
-    info_file_path = 'test_info_file.txt'
+    comparator_csv = 'Comparison/Both_predictions_out_of_299+15.csv'
+    info_file_path = 'Comparison/test_info_file.txt'
 
     comparator_df = make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv=comparator_csv)
     compare_dbs(df=comparator_df, info_file_path=info_file_path, print_info=True) # csv=comparator_csv
