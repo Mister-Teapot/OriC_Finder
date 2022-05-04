@@ -3,8 +3,11 @@ import os, sys
 import pandas as pd
 import numpy as np
 
-# Local imports
-sys.path.append('../OriC_Finder')
+# Self-made module
+#   Local path
+# sys.path.append('../OriC_Finder')
+#   Cluster path
+sys.path.append('/tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel/OriC_Finder/')
 from oriC_Finder import find_oriCs
 
 # Pandas printing options
