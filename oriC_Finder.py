@@ -3,6 +3,7 @@ import scipy.signal as sp
 import numpy as np
 import os
 from itertools import combinations
+from itertools import product
 
 # Self-made module
 import plotting_functions as pf
@@ -204,10 +205,9 @@ def match_peaks(peaks_x, peaks_y, peak_windows_x, peak_windows_y):
     If that still does not give anything: consult Jasmijn
     """
     matched_peaks = []
-    for i_x, win_x in enumerate(peak_windows_x):
-        for j_y, win_y in enumerate(peak_windows_y):
-            if len( set(win_x).intersection(win_y) ) > 0:
-                matched_peaks.append( (peaks_x[i_x], peaks_y[j_y]) )
+    for (i_x, win_x), (j_y, win_y) in product(enumerate(peak_windows_x), enumerate(peak_windows_y)):
+        if len( set(win_x).intersection(win_y) ) > 0:
+            matched_peaks.append( (peaks_x[i_x], peaks_y[j_y]) )
     return list(set(matched_peaks))
 
 
