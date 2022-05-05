@@ -92,7 +92,7 @@ def get_standard_vars(run_type, dataset_name, parallel):
     if run_type == 'cluster':
         path   = '/tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel/' + dataset_name + '/bacteria'
         to_csv = '/tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel/' + dataset_name
-        cpus   = max(mp.cpu_count(), 8) if parallel else 1
+        cpus   = mp.cpu_count() if parallel else 1
         print('mp.cpu_count() found :', mp.cpu_count())
 
     if run_type == 'local':
