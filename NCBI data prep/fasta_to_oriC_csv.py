@@ -92,7 +92,8 @@ def get_standard_vars(run_type, dataset_name, parallel):
     if run_type == 'cluster':
         path   = os.path.join( 'tudelft.net', 'staff-umbrella', 'GeneLocations', 'ZoyavanMeel', dataset_name, 'bacteria' )
         to_csv = os.path.join( 'tudelft.net', 'staff-umbrella', 'GeneLocations', 'ZoyavanMeel', dataset_name )
-        cpus   = mp.cpu_count() if parallel else 1
+        cpus   = max(mp.cpu_count(), 8) if parallel else 1
+        print('mp.cpu_count() found :', mp.cpu_count())
 
     if run_type == 'local':
         path   = os.path.join('NCBI data prep', dataset_name, 'chromosomes_only')
