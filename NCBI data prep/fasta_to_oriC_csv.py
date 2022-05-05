@@ -5,17 +5,19 @@ import pandas as pd
 import numpy as np
 
 # Set these before running
-DATASET_NAME = 'refseq_15'
-ON_CLUSTER   = False
+DATASET_NAME = 'refseq_3k_set'
+ON_CLUSTER   = True
 PARALLEL     = True
 
 # Self-made module
 if ON_CLUSTER:
     # Cluster path
     sys.path.append('/tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel/OriC_Finder/')
+    runtype = 'cluster'
 else:
     # Local path
     sys.path.append('../OriC_Finder')
+    runtype = 'local'
 from oriC_Finder import find_oriCs
 
 # Pandas printing options
@@ -73,7 +75,7 @@ def database_oriC_prediction(properties_list, to_csv=None):
     df['RefSeq'] = df['RefSeq'].str.extract(r'([^.]*)')
 
     if to_csv is not None:
-        df.to_csv(to_csv + f'/NCBI_oriC_{df.shape[0]}.csv', index=False)
+        df.to_csv( os.path.join(to_csv, f'/NCBI_oriC_{df.shape[0]}.csv'), index=False)
     return df
 
 
@@ -100,7 +102,7 @@ def get_standard_vars(run_type, dataset_name, parallel):
     return path, to_csv, cpus
 
 if __name__ == '__main__':
-    path, to_csv, cpus = get_standard_vars('cluster', DATASET_NAME, PARALLEL)
+    path, to_csv, cpus = get_standard_vars(run_type, DATASET_NAME, PARALLEL)
     samples = os.listdir( path )
     sample_paths = [os.path.join(path, fasta) for fasta in samples]
 
@@ -108,4 +110,3 @@ if __name__ == '__main__':
         prop_list = p.map(find_oriCs, sample_paths )
     
     database_oriC_prediction(properties_list=prop_list, to_csv=to_csv)
-    
