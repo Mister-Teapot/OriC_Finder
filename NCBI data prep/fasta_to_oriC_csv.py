@@ -13,11 +13,11 @@ PARALLEL     = True
 if ON_CLUSTER:
     # Cluster path
     sys.path.append('/tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel/OriC_Finder/')
-    runtype = 'cluster'
+    run_type = 'cluster'
 else:
     # Local path
     sys.path.append('../OriC_Finder')
-    runtype = 'local'
+    run_type = 'local'
 from oriC_Finder import find_oriCs
 
 # Pandas printing options
@@ -75,7 +75,7 @@ def database_oriC_prediction(properties_list, to_csv=None):
     df['RefSeq'] = df['RefSeq'].str.extract(r'([^.]*)')
 
     if to_csv is not None:
-        df.to_csv( os.path.join(to_csv, f'/NCBI_oriC_{df.shape[0]}.csv'), index=False)
+        df.to_csv( os.path.join(to_csv, f'NCBI_oriC_{df.shape[0]}.csv'), index=False)
     return df
 
 
@@ -90,8 +90,8 @@ def get_standard_vars(run_type, dataset_name, parallel):
         raise KeyError('Not a valid location')
 
     if run_type == 'cluster':
-        path   = '/tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel/' + dataset_name + '/bacteria'
-        to_csv = '/tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel/' + dataset_name
+        path   = os.path.join( 'tudelft.net', 'staff-umbrella', 'GeneLocations', 'ZoyavanMeel', dataset_name, 'bacteria' )
+        to_csv = os.path.join( 'tudelft.net', 'staff-umbrella', 'GeneLocations', 'ZoyavanMeel', dataset_name )
         cpus   = mp.cpu_count() if parallel else 1
 
     if run_type == 'local':
