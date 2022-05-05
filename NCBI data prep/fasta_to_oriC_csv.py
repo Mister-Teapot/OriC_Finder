@@ -90,8 +90,8 @@ def get_standard_vars(run_type, dataset_name, parallel):
         raise KeyError('Not a valid location')
 
     if run_type == 'cluster':
-        path   = os.path.join( 'tudelft.net', 'staff-umbrella', 'GeneLocations', 'ZoyavanMeel', dataset_name, 'bacteria' )
-        to_csv = os.path.join( 'tudelft.net', 'staff-umbrella', 'GeneLocations', 'ZoyavanMeel', dataset_name )
+        path   = '/tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel/' + dataset_name + '/bacteria'
+        to_csv = '/tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel/' + dataset_name
         cpus   = max(mp.cpu_count(), 8) if parallel else 1
         print('mp.cpu_count() found :', mp.cpu_count())
 
