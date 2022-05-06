@@ -5,8 +5,8 @@ import os, sys
 import numpy as np
 
 # Set these before running
-DATASET_NAME = 'refseq_3k_set'
-ON_CLUSTER   = True
+DATASET_NAME = 'refseq_287'
+ON_CLUSTER   = False
 PARALLEL     = False
 
 # Self-made module
@@ -62,7 +62,7 @@ if __name__ == '__main__':
         fieldnames.append(f'oriC_edges_{i}' )
         fieldnames.append(f'oriC_middles_{i}')
 
-    with open('get_whatever_i_can.csv', 'w') as fh:
+    with open(to_csv + '/get_whatever_i_can_2.csv', 'w') as fh:
         writer_object = csv.writer(fh)
         writer_object.writerow(fieldnames)
         fh.close()
@@ -91,7 +91,7 @@ if __name__ == '__main__':
                 row.append(np.nan)
                 row.append(np.nan)
 
-        with open('get_whatever_i_can.csv', 'a', newline='') as fh:
+        with open(to_csv + '/get_whatever_i_can_2.csv', 'a', newline='') as fh:
             writer_object = csv.writer(fh)
             writer_object.writerow(row)
             fh.close()
