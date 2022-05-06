@@ -7,7 +7,7 @@ import numpy as np
 # Set these before running
 DATASET_NAME = 'refseq_3k_set'
 ON_CLUSTER   = True
-PARALLEL     = True
+PARALLEL     = False
 
 # Self-made module
 if ON_CLUSTER:
@@ -107,7 +107,10 @@ if __name__ == '__main__':
     samples = os.listdir( path )
     sample_paths = [os.path.join(path, fasta) for fasta in samples]
 
-    with mp.Pool(cpus) as p:
-        prop_list = p.map(find_oriCs, sample_paths )
-    
+    if cpus > 1:
+        with mp.Pool(cpus) as p:
+            prop_list = p.map(find_oriCs, sample_paths )
+    else:
+        prop_list = [find_oriCs(sample) for sample in sample_paths]
+
     database_oriC_prediction(properties_list=prop_list, to_csv=to_csv)

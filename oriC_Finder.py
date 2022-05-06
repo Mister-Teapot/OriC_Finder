@@ -350,7 +350,7 @@ def find_oriCs(filename, oriC_size=500, window_size=60000):
     '''
     name, sequence = read_FASTA(filename)
     x, y, z, gc, n = calc_everything(sequence)
-    print(name)
+
     # Penalty factors
     option      = 0
     n_factor    = 100
