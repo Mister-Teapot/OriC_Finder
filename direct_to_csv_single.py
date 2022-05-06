@@ -36,8 +36,6 @@ def get_standard_vars(run_type, dataset_name, parallel):
     if run_type == 'cluster':
         path   = '/tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel/' + dataset_name + '/bacteria'
         to_csv = '/tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel/' + dataset_name
-        cpus   = mp.cpu_count() if parallel else 1
-        print('mp.cpu_count() found :', mp.cpu_count())
 
     if run_type == 'local':
         path   = os.path.join('NCBI data prep', dataset_name, 'chromosomes_only')
@@ -49,7 +47,7 @@ def get_standard_vars(run_type, dataset_name, parallel):
 if __name__ == '__main__':
     path, to_csv, _ = get_standard_vars(run_type, DATASET_NAME, PARALLEL)
     samples = os.listdir( path )
-    sample_paths = [os.path.join(path, fasta) for fasta in samples]
+    sample_paths = [path + '/' + fasta for fasta in samples]
 
     fieldnames = [
         'RefSeq',
