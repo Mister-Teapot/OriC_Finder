@@ -1,0 +1,8 @@
+RefSeq,Organism,Sequence_length,Penalties,False_order,oriC_edges_0,oriC_middles_0,oriC_edges_1,oriC_middles_1
+NC_002696,"Caulobacter vibrioides CB15, complete sequence",4016947,"([0.0, 0.0], 0, [445170, 23070])",False,"(4012473, 4012973)",4012723,"(1132497, 1132997)",1132747.0
+NC_002947,"Pseudomonas putida KT2440, complete sequence",6181873,"([0.0], 0, [32250])",False,"(1410, 1910)",1660,,
+NC_003047,"Sinorhizobium meliloti 1021, complete sequence",3654135,"([0.0], 0, [405080])",False,"(3630647, 3631147)",3630897,,
+NC_003272,"Nostoc sp. PCC 7120 = FACHB-418, complete sequence",6413771,"([0.0, 0.0], 200, [163400, 346320])",False,"(582976, 583476)",583226,"(31283, 31783)",31533.0
+NC_005363,"Bdellovibrio bacteriovorus HD100, complete sequence",3782950,"([0.0], 0, [90620])",False,"(5209, 5709)",5459,,
+NC_009850,"Aliarcobacter butzleri RM4018, complete sequence",2341251,"([0.0], 0, [194400])",False,"(24942, 25442)",25192,,
+NC_010547,"Crocosphaera subtropica ATCC 51142 chromosome linear, complete sequence",429701,"([0.0], 0, [340440])",False,"(340981, 341481)",341231,,

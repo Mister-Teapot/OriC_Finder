@@ -5,8 +5,8 @@ import pandas as pd
 import numpy as np
 
 # Set these before running
-DATASET_NAME = 'refseq_3k_set'
-ON_CLUSTER   = True
+DATASET_NAME = 'refseq_8'
+ON_CLUSTER   = False
 PARALLEL     = False
 
 # Self-made module
