@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
 
 def plot_Z_curve_3D(Z_curve, name):
@@ -55,3 +56,9 @@ def plot_skew(skewArray, peaks, name):
     ax1.scatter(peaks, peaks_y, marker='X', c='k', zorder=2)
     plt.show()
 
+
+def distance_histogram(db, log=False):
+    plt.hist(db['Distance'], bins=[x for x in range(db['Distance'].min(), db['Distance'].max()+100000, 100000)], log=log)
+    plt.show()
+    plt.hist(db['Distance'], bins=[x for x in range(-200000, 200000, 1000)], log=log)
+    plt.show()
