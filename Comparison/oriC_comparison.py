@@ -154,44 +154,43 @@ def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_di
     if print_info:
         print('\n'.join(info_lines))
 
+    return pd.concat( (df['RefSeq'], pd.Series(list_all_distances)), axis=1)
+
 
 if __name__ == '__main__':
-    Z_curve_csv    = 'NCBI data prep/3k+299+15_merged.csv'
-    DoriC_csv      = 'DoriC data prep/DoriC_oriC_concat_entries.csv'
+    Z_curve_csv = 'NCBI data prep/3k+299+15+7_merged.csv'
+    DoriC_csv   = 'DoriC data prep/DoriC_oriC_concat_entries.csv'
 
-    comparator_csv = 'Comparison/Both_predictions_out_of_3k+299+15.csv'
-    info_file_path = 'Comparison/comparison_info_file_3k+299+15.txt'
+    comparator_csv = 'Comparison/Both_predictions_out_of_3k+299+15+7.csv'
+    all_file_path  = 'Comparison/comparison_info_file_3k+299+15+7.txt'
     exp_file_path  = 'Comparison/comparison_info_file_experimental.txt'
 
-    # comparator_df = make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv=comparator_csv)
-    comparator_df = pd.read_csv('Comparison/Both_predictions_out_of_3k+299+15.csv')
+    comparator_df = make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv=comparator_csv)
+    comparator_df = pd.read_csv('Comparison/Both_predictions_out_of_3k+299+15+7.csv')
+
     avg_seq_len = comparator_df['Sequence_length'].sum() // comparator_df.shape[0]
+    disp_dist   = f'{MAX_DIST*100} % of the sequence length' if MAX_DIST <= 1 else f'{MAX_DIST} bp'
 
     print('Max genome length          :', comparator_df['Sequence_length'].max())
     print('Min genome length          :', comparator_df['Sequence_length'].min())
     print('Mean genome length         :', avg_seq_len)
     print('Deviation in genome length :', int(comparator_df['Sequence_length'].std()))
-    print('Genome size is not very consistent. The max distance that two oriC can')
-    disp_dist = f'{MAX_DIST*100} % of the sequence length' if MAX_DIST <= 1 else f'{MAX_DIST} bp'
-    print(f'be from each other will be set to {disp_dist} of the total genome length rather than a fixed number for all genomes.\n')
+    print('Genome size is not very consistent. The max distance that two oriC can be from each other will')
+    print(f'be set to {disp_dist} of the total genome length rather than a fixed number for all genomes.\n')
 
-    # compare_dbs(df=comparator_df, info_file_path=info_file_path, print_info=True, max_dist=MAX_DIST)
+    hist_all_df = compare_dbs(df=comparator_df, info_file_path=all_file_path, print_info=True, max_dist=MAX_DIST)
 
     # Accessions that have been experimentally verified.
     exp_refseq = [
-        'NC_000964', 'NC_002947',
-        'NC_003272', 'NC_003869',
-        'NC_003888', 'NC_005090',
-        'NC_006461', 'NC_007633',
-        'NC_000913', 'NC_003047',
-        'NC_007604', 'NC_000962',
-        'NC_002696', 'NC_002971',
-        'NC_005363', 'NC_008255',
-        'NC_009850', 'NC_010546',
-        'NC_010547', 'NC_011916'
+        'NC_000964', 'NC_002947', 'NC_003272', 'NC_003869',
+        'NC_003888', 'NC_005090', 'NC_006461', 'NC_007633',
+        'NC_000913', 'NC_003047', 'NC_007604', 'NC_000962',
+        'NC_002696', 'NC_002971', 'NC_005363', 'NC_008255',
+        'NC_009850', 'NC_010546', 'NC_010547', 'NC_011916'
     ]
 
-    print(comparator_df[comparator_df['RefSeq'].isin(exp_refseq)]['RefSeq'])
     exp_df = comparator_df[comparator_df['RefSeq'].isin(exp_refseq)]
 
-    # compare_dbs(df=exp_df, info_file_path=exp_file_path, print_info=True, max_dist=MAX_DIST)
+    hist_exp_df = compare_dbs(df=exp_df, info_file_path=exp_file_path, print_info=True, max_dist=MAX_DIST)
+
+    

@@ -1,15 +1,15 @@
 INFORMATION
-There were 12 organisms.
-	7 times both databases predicted the same amount of oriCs.
+There were 19 organisms.
+	12 times both databases predicted the same amount of oriCs.
 	2 times DoriC predicted more oriCs.
-	3 times mine predicted more oriCs.
+	5 times mine predicted more oriCs.
 
 If a DoriC sample had 2 oriC and the predictor predicted 4, we only use the top 2 predicted oriC to create the matches.
 The extra oriCs found by my predictor did not lead to any more matches with oriCs from DoriC.
-	There were a total of 14 oriCs predicted by DoriC
-	There were a total of 17 oriCs predicted by my predictor
+	There were a total of 21 oriCs predicted by DoriC
+	There were a total of 26 oriCs predicted by my predictor
 
-12 out of 14 (85.71 %) DoriC oriCs were found by my predictor with max accepted distance of 2.0 % of the sequence length
+17 out of 21 (80.95 %) DoriC oriCs were found by my predictor with max accepted distance of 2.0 % of the sequence length
 
 0 DoriC oriC were matched to mutliple Z_oriC. (> 0 is not okay)
 2 Z_oriC were matched to mutliple DoriC oriC. (> 0 is okay)
