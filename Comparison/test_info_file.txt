@@ -1,4 +1,0 @@
-There were 33 organisms.
-	11 times both databases predicted the same amount of oriCs.
-	5 times DoriC predicted more oriCs.
-	17 times mine predicted more oriCs.
