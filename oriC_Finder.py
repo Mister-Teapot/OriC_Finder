@@ -19,7 +19,9 @@ def read_FASTA(filename):
     with open(filename, 'r') as fh:
         for line in fh:
             line = line.rstrip()
-            if line[0] == '>' and name is None:
+            if len(line) == 0 and name is not None:
+                break # In case of empty line at end of file
+            elif line[0] == '>' and name is None:
                 name = line[1:]
             elif line[0] == '>' and name is not None:
                 break # In case the FASTA contains multiple sequences, only read the first one.
