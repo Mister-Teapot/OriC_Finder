@@ -13,6 +13,7 @@ sys.path.append('../OriC_Finder')
 #   Cluster path
 # sys.path.append('/tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel/OriC_Finder/')
 import oriC_Finder as of
+import plotting_functions as pf
 
 MAX_DIST = 1/50
 
@@ -39,6 +40,7 @@ def make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv):
 
     return comparator_df
 
+
 def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_dist=30000):
     '''
     Compares results. Results can be loaded from a pandas.DataFrame OR csv.
@@ -48,14 +50,13 @@ def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_di
                  seen as a fraction of the total sequence length. If > 1, it will be seen as # of basepairs.
     '''
 
+    # Errors and warnings
     if df is None and csv is None:
         raise KeyError('Must load a pandas.DataFrame or CSV file.')
     if df is not None and csv is not None:
         raise KeyError('Load either a pandas.DataFrame or CSV, not both.')
-
     if csv is not None:
         df = pd.read_csv(csv)
-    
     if max_dist > 30000:
         warnings.warn("Warning: Raising the max_dist above the minimum distance of oriC found with the predictor. Potential overlap in DoriC to Z_oriC matching")
 
@@ -64,17 +65,25 @@ def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_di
     # Compare predictions (Assuming DoriC as ground truth for now)
     num_of_predictions = [0, 0] # [more oriC in DoriC, more oriC by mine]
     multi_matching = []
-    list_all_distances = []
+
+    all_distances = {
+        'RefSeq'  : [],
+        'D_idx'   : [],
+        'Z_idx'   : [],
+        'Distance': []
+    }
+
     total_D_oriC = 0
     total_Z_oriC = 0
     total_D_by_Z = 0
+
     for i, sample_original in df.iterrows():
         sample = sample_original.copy()
         sample.dropna(inplace=True)
 
         seq_len = sample['Sequence_length']
         D_oriC_cols = sorted( [i for i in sample.axes[0] if 'DoriC_oriC' in i], key=lambda x:x[-1] )
-        Z_oriC_cols = sorted( [i for i in sample.axes[0] if 'oriC_middle' in i], key=lambda x:x[-1] )
+        Z_oriC_cols = sorted( [i for i in sample.axes[0] if 'oriC_middle' in i], key=lambda x:x[-1] )[:2] # only use top 2 oriC if there is more than one
     
         total_D_oriC += len(D_oriC_cols)
         total_Z_oriC += len(Z_oriC_cols)
@@ -106,24 +115,22 @@ def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_di
         total_D_by_Z += len(D_appearances)
         multi_matching.append( ( len(D_appearances) != len(set(D_appearances)), len(Z_appearances) != len(set(Z_appearances)) ) )
 
-        all_distances = [] # D_oriC index and its closest Z_oriC
         for i, D_oriC in enumerate(D_oriC_middles):
             distances = []
             for j, Z_oriC in enumerate(Z_oriC_middles[:len(D_oriC_middles)]):
-                # Modified: always take D_oriC as 0-point
-                dist_1 = D_oriC - Z_oriC
-                dist_2 = Z_oriC + seq_len-1 - D_oriC
-                distances.append( (j, min(dist_1, dist_2, key=lambda x:abs(x))) )
-                # Original: always positive distance
-                # dist_1 = max(D_oriC, Z_oriC) - min(D_oriC, Z_oriC)
-                # dist_2 = min(D_oriC, Z_oriC) + seq_len-1 - max(D_oriC, Z_oriC)
-                # distances.append( (j, min(dist_1, dist_2)) )
-            all_distances.append( (i, min(distances, key=lambda x:x[1])) )
-        list_all_distances.append([(x[0], x[1][0], x[1][1]) for x in all_distances])
+                dist_1 = max(D_oriC, Z_oriC) - min(D_oriC, Z_oriC)
+                dist_2 = min(D_oriC, Z_oriC) + seq_len-1 - max(D_oriC, Z_oriC)
+                distances.append( (j, min(dist_1, dist_2)) )
+            sorted_dists = min(distances, key=lambda x:abs(x[1]))
 
+            all_distances['RefSeq'].append(sample['RefSeq'])
+            all_distances['D_idx'].append(i)
+            all_distances['Z_idx'].append(sorted_dists[0])
+            all_distances['Distance'].append(sorted_dists[1])
 
         ### Accuracy per sample: how many samples were properly matched:
 
+    # Information
     info_lines = ['INFORMATION']
     info_lines.append( f'There were {df.shape[0]} organisms.' )
     info_lines.append( f'\t{df.shape[0] - sum(num_of_predictions)} times both databases predicted the same amount of oriCs.' )
@@ -145,8 +152,9 @@ def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_di
     info_lines.append( f'{len(multi_match_D)} DoriC oriC were matched to mutliple Z_oriC. (> 0 is not okay)' )
     info_lines.append( f'\tThis means there are Z_oriC that are closer than {disp_dist} to each other.') if len(multi_match_D) > 0 else None
     info_lines.append( f'{len(multi_match_Z)} Z_oriC were matched to mutliple DoriC oriC. (> 0 is okay)' )
-    info_lines.append( f'\tThis means there are DoriC oriC that are closer than {disp_dist} to each other.') if len(multi_match_Z) > 0 else None
+    info_lines.append( f'\tThis means there are DoriC oriC that are closer than {disp_dist} to each other.\n') if len(multi_match_Z) > 0 else None
 
+    info_lines.append( f'The Z_oriC was off by { int(sum(all_distances["Distance"])/len(all_distances["Distance"])) } bp on average.' )
 
     if info_file_path is not None:
         with open(info_file_path, 'w') as fh:
@@ -154,23 +162,35 @@ def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_di
     if print_info:
         print('\n'.join(info_lines))
 
-    return pd.concat( (df['RefSeq'], pd.Series(list_all_distances)), axis=1)
+    return pd.DataFrame(all_distances)
 
 
 if __name__ == '__main__':
+    # Input paths
     Z_curve_csv = 'NCBI data prep/3k+299+15+7_merged.csv'
     DoriC_csv   = 'DoriC data prep/DoriC_oriC_concat_entries.csv'
 
+    # Output paths
     comparator_csv = 'Comparison/Both_predictions_out_of_3k+299+15+7.csv'
     all_file_path  = 'Comparison/comparison_info_file_3k+299+15+7.txt'
     exp_file_path  = 'Comparison/comparison_info_file_experimental.txt'
 
-    comparator_df = make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv=comparator_csv)
-    comparator_df = pd.read_csv('Comparison/Both_predictions_out_of_3k+299+15+7.csv')
+    # Accessions that have been experimentally verified.
+    exp_refseq = [
+        'NC_000964', 'NC_002947', 'NC_003272', 'NC_003869', 'NC_003888', 'NC_005090', 'NC_006461', 'NC_007633', 'NC_000913', 'NC_003047',
+        'NC_007604', 'NC_000962', 'NC_002696', 'NC_002971', 'NC_005363', 'NC_008255', 'NC_009850', 'NC_010546', 'NC_010547', 'NC_011916'
+    ]
 
+    # Make csv (run once)
+    # comparator_df = make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv=comparator_csv)
+
+    # Define dataframes
+    comparator_df = pd.read_csv('Comparison/Both_predictions_out_of_3k+299+15+7.csv')
+    experiment_df = comparator_df[comparator_df['RefSeq'].isin(exp_refseq)]
+
+    # General info
     avg_seq_len = comparator_df['Sequence_length'].sum() // comparator_df.shape[0]
     disp_dist   = f'{MAX_DIST*100} % of the sequence length' if MAX_DIST <= 1 else f'{MAX_DIST} bp'
-
     print('Max genome length          :', comparator_df['Sequence_length'].max())
     print('Min genome length          :', comparator_df['Sequence_length'].min())
     print('Mean genome length         :', avg_seq_len)
@@ -178,19 +198,15 @@ if __name__ == '__main__':
     print('Genome size is not very consistent. The max distance that two oriC can be from each other will')
     print(f'be set to {disp_dist} of the total genome length rather than a fixed number for all genomes.\n')
 
+    # Compare input databases
     hist_all_df = compare_dbs(df=comparator_df, info_file_path=all_file_path, print_info=True, max_dist=MAX_DIST)
+    # hist_all_df.to_csv('Comparison/hist_all_df.csv', index=False)
+    # hist_all_df = pd.read_csv('Comparison/hist_all_df.csv')
 
-    # Accessions that have been experimentally verified.
-    exp_refseq = [
-        'NC_000964', 'NC_002947', 'NC_003272', 'NC_003869',
-        'NC_003888', 'NC_005090', 'NC_006461', 'NC_007633',
-        'NC_000913', 'NC_003047', 'NC_007604', 'NC_000962',
-        'NC_002696', 'NC_002971', 'NC_005363', 'NC_008255',
-        'NC_009850', 'NC_010546', 'NC_010547', 'NC_011916'
-    ]
+    hist_exp_df = compare_dbs(df=experiment_df, info_file_path=exp_file_path, print_info=False, max_dist=MAX_DIST)
 
-    exp_df = comparator_df[comparator_df['RefSeq'].isin(exp_refseq)]
-
-    hist_exp_df = compare_dbs(df=exp_df, info_file_path=exp_file_path, print_info=True, max_dist=MAX_DIST)
-
+    pf.distance_histogram(hist_all_df, log=True)
+    pf.distance_histogram(hist_all_df, log=False)
+    pf.distance_histogram(hist_exp_df, log=True)
+    pf.distance_histogram(hist_exp_df, log=False)
     
