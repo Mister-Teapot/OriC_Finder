@@ -16,4 +16,4 @@ The extra oriCs found by my predictor did not lead to any more matches with oriC
 276 Z_oriC were matched to mutliple DoriC oriC. (> 0 is okay)
 	This means there are DoriC oriC that are closer than 2.0 % of the sequence length to each other.
 
-The Z_oriC was off by 188213 bp on average.
+The Z_oriC was off by 149391 bp on average.
