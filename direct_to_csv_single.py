@@ -23,8 +23,6 @@ else:
 from oriC_Finder import find_oriCs
 
 
-# df['RefSeq'] = df['RefSeq'].str.extract(r'([^.]*)')
-
 def init_settings(run_type, dataset_name, parallel):
     '''Gets variables for processing based on whether the script is executed locally or on the cluster'''
     type_list = ['cluster', 'local']
@@ -40,7 +38,7 @@ def init_settings(run_type, dataset_name, parallel):
 
     if run_type == 'local':
         data_path = 'NCBI data prep/' + dataset_name + '/chromosomes_only'
-        csv_path  = 'NCBI data prep/' + dataset_name + '/csvs'
+        csv_path  = 'NCBI data prep/' + dataset_name + '/csvs_2'
         cpus      = os.cpu_count() - 1 if parallel else 1
 
     return data_path, csv_path, cpus
