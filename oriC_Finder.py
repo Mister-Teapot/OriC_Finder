@@ -78,10 +78,8 @@ def get_peak_windows(curve_size, peaks, window_size=500):
     frame   = window_size//2
 
     for i in range(len(peaks)):
-        # indeces of the windows 250 bp up- & downstream of peak
-                                # 5'     i      3'
-        down = peaks[i] + frame #        |->  |
-        up   = peaks[i] - frame #   |  <-|
+        down = peaks[i] + frame
+        up   = peaks[i] - frame
         # This is for cases where the extremes are at the beginning and end of the domain
         if up < 0:
             a_up = [j for j in range(0, peaks[i])]
@@ -232,6 +230,35 @@ def process_array(curve, mode='max', window_size=500):
     return peaks, peak_windows
 
 
+def process_matches(curves_list, peaks_list, windows_list):
+
+    # Option 0: Base oriC position on x and y components of the Z-curve
+    matched_peaks = match_peaks(peaks_list[0], peaks_list[1], windows_list[0], windows_list[1])
+    option = 0
+
+    if len(matched_peaks) == 0:
+        # Option 1: Base oriC position solely on global extremes with a larger window_size
+        matched_peaks = get_last_resort_positions(curves_list[0], curves_list[1], window_size=len(windows_list[0][0])*2)
+        option += 1
+
+    if len(matched_peaks) == 0:
+        # Option 2: Base oriC position of peaks of x and gc-skew
+        matched_peaks = match_peaks(peaks_list[0], peaks_list[2], windows_list[0], windows_list[2])
+        option += 1
+
+    if len(matched_peaks) == 0:
+        # Option 3: Base oriC position of peaks of y and gc-skew
+        matched_peaks = match_peaks(peaks_list[1], peaks_list[2], windows_list[1], windows_list[2])
+        option += 1
+
+    if len(matched_peaks) == 0:
+        # Option 4: Base oriC position of global minimum of x
+        matched_peaks = [(curves_list[0].argmin(), curves_list[0].argmin())]
+        option += 1
+
+    return matched_peaks, option
+
+
 def get_last_resort_positions(x, y, window_size=500):
     """Get min of x, max of y and their respective peak_windows"""
     x_peak, y_peak = [x.argmin()], [y.argmax()]
@@ -334,7 +361,25 @@ def get_dist_penalty(curve_size, matched_peaks, dist_penalty_factor=10):
     return [i * dist_penalty_factor for i in penalties]
 
 
-def find_oriCs(filename, oriC_size=500, window_size=60000):
+def curve_combinations(curves_list, peaks_list, windows_list):
+    '''Get every matched_peaks combination for x, y, and gc.'''
+    oriC_locations_list = []
+    for (i, peaks_i), (j, peaks_j) in combinations(enumerate(peaks_list), 2):
+        mode_a = 'max' if i == 1 else 'min' # min for x and gc, max for y
+        mode_b = 'max' if j == 1 else 'min'
+
+        matched_peaks  = match_peaks(peaks_i, peaks_j, windows_list[i], windows_list[j])
+        oriC_locations = [merge_peaks(len(curves_list[0]), matches[0], matches[1]) for matches in matched_peaks]
+        oriC_locations_list.append( sort_oriCs(curves_list[i], curves_list[j], oriC_locations, mode_a=mode_a, mode_b=mode_b, window_size=len(windows_list[0][0])) )
+    return oriC_locations_list
+
+# On second thought: Make this a processing and oriC finding function for two given curves. Then you can use this function in find_oriCs() and import this function elsewhere too.
+# TODO: Make this function and get all options for all data to determine which options are best-suited when.
+# TODO: Also check the distance calculation (NC_016946 inspection)
+# TODO: Also check when data is too noisy to be properly interpreted.
+
+
+def find_oriCs(filename, oriC_size=500):#, window_size=150000):
     '''
     Locates potential oriC based on Z-curve and GC-skew analysis.
     Input:
@@ -352,46 +397,17 @@ def find_oriCs(filename, oriC_size=500, window_size=60000):
     '''
     name, sequence = read_FASTA(filename)
     x, y, z, gc, n = calc_everything(sequence)
-
-    # Penalty factors
-    option      = 0
-    n_factor    = 100
-    o_factor    = 100
-    d_factor    = 100
-    false_order = False
-    # TODO: determine 'n_factor' based on accuracy of predictions of the 287 refseq and the average amount of N's in those genomes.
-    # e.g.  287 sequences with on average 17545.9 N's per sequence has an accuracy of 80 %
-    #       200 sequences with on average 10000.0 N's per sequence has an accuracy of 90 %
-    #       Just check if amount of N's per sequence has anything to do with the accuracy of the prediction compared to DoriC.
-    # TODO: determine effect of option on accuracy of prediction with DoriC as ground truth (or the 23 known oriCs).
+    false_order    = False
+    window_size    = int(len(sequence)*0.03)
 
     # z gives no information for oriC location prediction
     peaks_x,  peak_windows_x  = process_array(x , mode='min', window_size=window_size)
     peaks_y,  peak_windows_y  = process_array(y , mode='max', window_size=window_size)
     peaks_gc, peak_windows_gc = process_array(gc, mode='min', window_size=window_size)
-    matched_peaks = match_peaks(peaks_x, peaks_y, peak_windows_x, peak_windows_y)
+    # pf.plot_Z_curve_2D([x, y], [peaks_x, peaks_y], name)
 
-    if len(matched_peaks) == 0:
-        # Option 1: Base position solely on global extremes (Won't lead to matched peaks unless the window_size is larger than before)
-        matched_peaks = get_last_resort_positions(x, y, window_size=window_size) # window_size=window_size*2
-        option += 1
-
-    if len(matched_peaks) == 0:
-        # Option 2: Base position of peaks of x and gc-skew
-        matched_peaks = match_peaks(peaks_x, peaks_gc, peak_windows_x, peak_windows_gc)
-        option += 1
-
-    if len(matched_peaks) == 0:
-        # Option 3: Base position of peaks of y and gc-skew
-        matched_peaks = match_peaks(peaks_y, peaks_gc, peak_windows_y, peak_windows_gc)
-        option += 1
-
-    if len(matched_peaks) == 0:
-        # Option 4: Base position of peaks of x
-        matched_peaks = [(x.argmin(), x.argmin())]
-        option += 1
-
-    # Made it through the if's of despair...
+    # Getting prefered option
+    matched_peaks, option = process_matches( (x, y, gc), (peaks_x, peaks_y, peaks_gc), (peak_windows_x, peak_windows_y, peak_windows_gc) )
     oriC_locations = [merge_peaks(len(sequence), matches[0], matches[1]) for matches in matched_peaks]
 
     # Sort oriC locations based on importance and calculate penalties
@@ -405,40 +421,35 @@ def find_oriCs(filename, oriC_size=500, window_size=60000):
         oriC_locations = sort_oriCs(y, gc, oriC_locations, mode_a='max', mode_b='min', window_size=window_size)
         false_order = get_false_order(sequence, y, gc, oriC_locations, mode_a='max', mode_b='min', window_size=window_size)
 
-    '''
-    Get penalty score for how an oriC was predicted. The higher the penalty, the lower the prediction's reliability.
-    Penalty factors:
-        option_penalty : Which option was needed?
-                            - 0 to 4 based on the option that was needed
-                            - Higher option -> bigger penalty
-        dist_penalty   : What is the distance between a peak in x that was matched with a peak in y (or gc, etc. for different options)?
-                            - 0 to 1 scaled to window_size
-                            - Bigger disagreement between extremes -> bigger penalty
-        n_penalty      : How high is the N-count?
-                            - Check N-count in oriC
-                            - Check N-count in whole sequence
-    Return:
-        penalties      : list of penalty scores for each oriC
-    '''
-
     # Add penalties
-    n_penalties = [(n/len(sequence)) * n_factor] * len(oriC_locations)
-    o_penalty   = option * o_factor
+    n_penalties = (n/len(sequence)) * len(oriC_locations)
+    o_penalty   = option
     d_penalties = get_dist_penalty(len(sequence), matched_peaks)
     oriC_ranges = get_oriC_ranges(len(sequence), oriC_locations, range_size=oriC_size)
 
-    oriC_properties = {
-        'name'         : name,
-        'oriC_edges'   : oriC_ranges,
-        'oriC_middles' : oriC_locations,
-        'z_curve'      : (x, y, z),
-        'gc_skew'      : gc,
-        'nod_penalties': (n_penalties, o_penalty, d_penalties),
-        'false_order'  : false_order,
-        'seq_size'     : len(sequence) # necessary for DoriC data processing
+    preferred_oriC_properties = {
+        'name'          : name,
+        'oriC_edges'    : oriC_ranges,
+        'oriC_middles'  : oriC_locations,
+        'z_curve'       : (x, y, z),
+        'gc_skew'       : gc,
+        'n_penalty'     : n_penalties,
+        'o_penalty'     : o_penalty,
+        'd_penalty'     : d_penalties,
+        'false_order'   : false_order,
+        'seq_size'      : len(sequence)
     }
 
-    return oriC_properties
+    # Getting all options
+    all_oriCs_list = curve_combinations( (x, y, gc), (peaks_x, peaks_y, peaks_gc), (peak_windows_x, peak_windows_y, peak_windows_gc) )
+
+    all_oriCs_dict = {
+        'xy_oriCs' : all_oriCs_list[0],
+        'xgc_oriCs': all_oriCs_list[1],
+        'ygc_oriCs': all_oriCs_list[2]
+    }
+
+    return preferred_oriC_properties, all_oriCs_dict
 
 
 if __name__ == '__main__':
@@ -446,31 +457,41 @@ if __name__ == '__main__':
     # oriC in max of y (Amino vs Keto)
 
     # For testing a small folder
-    # for fasta in os.listdir('./test_fastas'):
-    #     file = os.path.join('test_fastas', fasta)
-    #     properties = find_oriCs(file)
-    #     name    = properties['name']
-    #     Z_curve = properties['z_curve']
-    #     GC_skew = properties['gc_skew']
-
-    #     print(name)
-    #     print('QoP  :', properties['nod_penalties'], properties['false_order'])
-    #     print('oriCs:', properties['oriC_edges'])
-
-    #     pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
-    #     pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
-    #     # pf.plot_Z_curve_3D(Z_curve, name)
+    for fasta in os.listdir('./worst_fastas'):
+        file = os.path.join('worst_fastas', fasta)
+        # name, seq = read_FASTA(file)
+        # print(name, len(seq))
+        preferred_properties, all_oriCs = find_oriCs(file)
     
-    # # For Testing single files
-    properties = find_oriCs('./test_fastas/Escherichia_coli_K_12.fna')
-    name    = properties['name']
-    Z_curve = properties['z_curve']
-    GC_skew = properties['gc_skew']
+        name    = preferred_properties['name']
+        Z_curve = preferred_properties['z_curve']
+        GC_skew = preferred_properties['gc_skew']
 
-    print(name)
-    print('QoP  :', properties['nod_penalties'], properties['false_order'])
-    print('oriCs:', properties['oriC_edges'])
+        print(name)
+        print('QoP  :', preferred_properties['n_penalty'], preferred_properties['o_penalty'], preferred_properties['d_penalty'], preferred_properties['false_order'])
+        print('oriCs:', preferred_properties['oriC_edges'])
 
-    pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
-    # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
-    # pf.plot_Z_curve_3D(Z_curve, name)
+        for key in all_oriCs.keys():
+            print(key, all_oriCs[key])
+
+        pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [preferred_properties['oriC_middles']]*3, name)
+        # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
+        # pf.plot_Z_curve_3D(Z_curve, name)
+
+    # For Testing single files
+    # preferred_properties, all_oriCs = find_oriCs('./worst_fastas/NC_016111.fasta')
+
+    # name    = preferred_properties['name']
+    # Z_curve = preferred_properties['z_curve']
+    # GC_skew = preferred_properties['gc_skew']
+
+    # print(name)
+    # print('QoP  :', preferred_properties['n_penalty'], preferred_properties['o_penalty'], preferred_properties['d_penalty'], preferred_properties['false_order'])
+    # print('oriCs:', preferred_properties['oriC_edges'])
+
+    # for key in all_oriCs.keys():
+    #     print(key, all_oriCs[key])
+
+    # pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [preferred_properties['oriC_middles']]*3, name)
+    # # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
+    # # pf.plot_Z_curve_3D(Z_curve, name)
