@@ -29,16 +29,7 @@ def merge_csvs(file_folder, merged_csv, fieldnames, length=-1, headers=False):
                         break
                     else:
                         writer.writerow(row)
-    
-# df_3k = pd.read_csv(r'C:\0. School\Bachelor Thesis\Zoya_Code+Data\OriFinder\OriC_Finder\NCBI data prep\refseq_8\NCBI_oriC_7.csv')
-# df_rest = pd.read_csv(r'C:\0. School\Bachelor Thesis\Zoya_Code+Data\OriFinder\OriC_Finder\NCBI data prep\3k+299+15_merged.csv')
-# df_3k.dropna(how='all', axis=1, inplace=True)
-# df_rest.dropna(how='all', axis=1, inplace=True)
-# df_3k['RefSeq'] = df_3k['RefSeq'].str.extract(r'([^.]*)')
 
-# df_merged = pd.concat((df_3k, df_rest), axis=0, ignore_index=True)
-
-# df_merged.to_csv(r'C:\0. School\Bachelor Thesis\Zoya_Code+Data\OriFinder\OriC_Finder\NCBI data prep\3k+299+15+7_merged.csv', index=False)
 
 def move_fastas(db_loc, on_cluster=True, split=4):
     '''
@@ -73,4 +64,4 @@ if __name__ == '__main__':
     fieldnames.extend([f'ygc_oriC_{i}' for i in range(max_oriCs)])
 
     # merge_csvs('refseq_23/csvs/', 'refseq_23/merged.csv', fieldnames, length=1)
-    move_fastas('refseq_23', on_cluster=False, split=4)
+    # move_fastas('refseq_23', on_cluster=False, split=4)
