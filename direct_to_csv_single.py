@@ -6,8 +6,8 @@ import os, sys
 import numpy as np
 
 # Set these before running
-DATASET_NAME = 'refseq_8'
-ON_CLUSTER   = False
+DATASET_NAME = 'refseq_3k_set'
+ON_CLUSTER   = True
 PARALLEL     = True
 MAX_ORICS    = 10 # Assumption: No more than 10 oriC for a single organism are predicted
 
@@ -33,7 +33,7 @@ def init_settings(run_type, dataset_name, parallel):
 
     if run_type == 'cluster':
         data_path = '/tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel/' + dataset_name + '/bacteria'
-        csv_path  = '/tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel/' + dataset_name + '/csvs'
+        csv_path  = '/tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel/' + dataset_name + '/csvs_2'
         cpus      = os.cpu_count() if parallel else 1
 
     if run_type == 'local':
@@ -88,12 +88,13 @@ if __name__ == '__main__':
     samples = os.listdir( data_path )
     sample_paths = [data_path + '/' + fasta for fasta in samples]
     del samples
-
-    # for sample_path in sample_paths:
-    #     prep_prediction(sample_path, csv_path, MAX_ORICS)
-    with mp.Pool(cpus) as pool:
-        prepped_prediction = partial(prep_prediction, csv_path=csv_path, max_oriCs=MAX_ORICS)
-        pool.map(prepped_prediction, sample_paths)
+    if not PARALLEL:
+        for sample_path in sample_paths:
+            prep_prediction(sample_path, csv_path, MAX_ORICS)
+    else:    
+        with mp.Pool(cpus) as pool:
+            prepped_prediction = partial(prep_prediction, csv_path=csv_path, max_oriCs=MAX_ORICS)
+            pool.map(prepped_prediction, sample_paths)
 
     fieldnames = [
         'RefSeq',
