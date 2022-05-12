@@ -20,7 +20,7 @@ else:
     # Local path
     sys.path.append('../OriC_Finder')
     run_type = 'local'
-from oriC_Finder import find_oriCs
+from oriC_Finder import find_oriCs, read_FASTA
 
 
 def init_settings(run_type, dataset_name, parallel):
@@ -45,6 +45,12 @@ def init_settings(run_type, dataset_name, parallel):
 
 
 def prep_prediction(sample_path, csv_path, max_oriCs):
+    # Quick check to see if th FASTA has already been processed
+    with open(sample_path, 'r') as fh:
+        accession = fh.readline().split(' ')[0][1:]
+    if os.path.exists(csv_path + '/' + accession + '.csv'):
+        return
+
     preferred_properties, all_oriCs = find_oriCs(sample_path)
 
     # Name processing
