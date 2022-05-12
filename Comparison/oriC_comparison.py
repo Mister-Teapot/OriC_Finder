@@ -25,6 +25,15 @@ def make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv):
     Z_curve_df = pd.read_csv( Z_curve_csv )
     DoriC_df   = pd.read_csv( DoriC_csv )
 
+    # Drop empty columns
+    Z_curve_df.dropna(axis=1, how='all', inplace=True)
+
+    # Drop duplicate rows
+    Z_curve_df.drop_duplicates(subset=['RefSeq'], ignore_index=True, inplace=True)
+
+    # Remove version numbers from accessions
+    Z_curve_df['RefSeq'] = Z_curve_df['RefSeq'].str.extract(r'([^.]*)')
+
     # Merge into single dataframe
     col_names_Z = [x for x in Z_curve_df.columns if x not in ['RefSeq', 'Organism']]
     in_both_df = {x: [] for x in DoriC_df.columns.to_list() + col_names_Z}
@@ -37,24 +46,24 @@ def make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv):
     
     comparator_df = pd.DataFrame(in_both_df)
 
-    # Extract nod-penalties (Do this in oriC_to_csv next time)
-    comparator_df['Penalties'] = comparator_df['Penalties'].str.split(r'\], ')
+    # # Extract nod-penalties (Do this in oriC_to_csv next time)
+    # comparator_df['Penalties'] = comparator_df['Penalties'].str.split(r'\], ')
 
-    comparator_df['N_penalty'] = comparator_df['Penalties'].str[0]
-    comparator_df['N_penalty'] = comparator_df['N_penalty'].str.lstrip('(') + ']'
+    # comparator_df['N_penalty'] = comparator_df['Penalties'].str[0]
+    # comparator_df['N_penalty'] = comparator_df['N_penalty'].str.lstrip('(') + ']'
 
-    comparator_df['tmp'] = comparator_df['Penalties'].str[1]
-    comparator_df['tmp'] = comparator_df['tmp'].str.split(r', \[')
+    # comparator_df['tmp'] = comparator_df['Penalties'].str[1]
+    # comparator_df['tmp'] = comparator_df['tmp'].str.split(r', \[')
 
-    comparator_df['O_penalty'] = comparator_df['tmp'].str[0]
-    comparator_df['O_penalty'] = comparator_df['O_penalty'].astype(int)
+    # comparator_df['O_penalty'] = comparator_df['tmp'].str[0]
+    # comparator_df['O_penalty'] = comparator_df['O_penalty'].astype(int)
 
-    comparator_df['D_penalty'] = comparator_df['tmp'].str[1]
-    comparator_df['D_penalty'] = '[' + comparator_df['D_penalty'].str.rstrip(')')
+    # comparator_df['D_penalty'] = comparator_df['tmp'].str[1]
+    # comparator_df['D_penalty'] = '[' + comparator_df['D_penalty'].str.rstrip(')')
 
-    comparator_df.drop(columns=['Penalties', 'tmp'], inplace=True)
+    # comparator_df.drop(columns=['Penalties', 'tmp'], inplace=True)
+
     comparator_df.to_csv(comparator_csv, index=False)
-
     return comparator_df
 
 
@@ -194,16 +203,16 @@ def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_di
 
 if __name__ == '__main__':
     # Input paths
-    Z_curve_csv = 'NCBI data prep/3k+299+15+7_merged.csv'
+    Z_curve_csv = 'NCBI data prep/oriC_predictions_v2_csvs/All_data.csv'
     DoriC_csv   = 'DoriC data prep/DoriC_oriC_concat_entries.csv'
 
     # Output paths
-    comparator_csv = 'Comparison/Both_predictions_out_of_3k+299+15+7.csv'
-    all_file_path  = 'Comparison/comparison_info_file_3k+299+15+7.txt'
+    comparator_csv = 'Comparison/v2/in_both_sets_all.csv'
+    all_file_path  = 'Comparison/comparison_info_file_all.txt'
 
     # Make or load csv
-    # comparator_df = make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv=comparator_csv)
-    comparator_df = pd.read_csv('Comparison/Both_predictions_out_of_3k+299+15+7.csv')
+    comparator_df = make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv=comparator_csv)
+    # comparator_df = pd.read_csv(comparator_csv)
 
     # General info
     avg_seq_len = comparator_df['Sequence_length'].sum() // comparator_df.shape[0]
@@ -216,11 +225,11 @@ if __name__ == '__main__':
     print(f'be set to {disp_dist} of the total genome length rather than a fixed number for all genomes.\n')
 
     # Compare input databases
-    # hist_all_df = compare_dbs(df=comparator_df, info_file_path=all_file_path, print_info=True, max_dist=MAX_DIST)
+    hist_all_df = compare_dbs(df=comparator_df, info_file_path=all_file_path, print_info=True, max_dist=MAX_DIST)
     # hist_all_df.to_csv('Comparison/hist_all_df.csv', index=False)
-    hist_all_df = pd.read_csv('Comparison/hist_all_df.csv')
-    pf.distance_histogram(hist_all_df, log=True)
-    # pf.distance_histogram(hist_all_df, log=False)
+    # hist_all_df = pd.read_csv('Comparison/hist_all_df.csv')
+    # pf.distance_histogram(hist_all_df, log=True)
+    pf.distance_histogram(hist_all_df, log=False)
 
     # All the same steps, but only the experimental data
     # exp_file_path  = 'Comparison/comparison_info_file_experimental.txt'
@@ -268,4 +277,4 @@ if __name__ == '__main__':
     # hist_best_df = compare_dbs(df=best_df, info_file_path=None, print_info=True, max_dist=MAX_DIST)
     # pf.distance_histogram(hist_best_df, log=False)
 
-    print(hist_all_df.sort_values(by='Distance').tail(10))
+    # print(hist_all_df.sort_values(by='Distance').tail(10))

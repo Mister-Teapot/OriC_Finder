@@ -1,4 +1,5 @@
 import os
+import pandas as pd
 os.chdir( os.path.dirname( os.path.abspath(__file__) ) )
 
 def read_FASTA(filename):
@@ -17,9 +18,14 @@ def read_FASTA(filename):
                 n_count += line.count('N')
     return name, n_count
 
-db_loc = './NCBI data prep//refseq_287/chromosomes_only'
-count = []
-for fasta in os.listdir(db_loc):
-    _, single_count = read_FASTA(os.path.join(db_loc, fasta))
-    count.append(single_count)
-print('Average N-count in 287 representative refseq genomes:', sum(count)/len(count))
+if __name__ == '__main__':
+    # db_loc = './NCBI data prep//refseq_287/chromosomes_only'
+    # count = []
+    # for fasta in os.listdir(db_loc):
+    #     _, single_count = read_FASTA(os.path.join(db_loc, fasta))
+    #     count.append(single_count)
+    # print('Average N-count in 287 representative refseq genomes:', sum(count)/len(count))
+
+    a = pd.read_csv('v1/Both_predictions_out_of_3k+299+15+7.csv')['RefSeq'].to_list()
+    b = pd.read_csv('v2/in_both_sets_all.csv')['RefSeq'].to_list()
+    print(set(b).symmetric_difference(a))

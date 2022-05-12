@@ -70,13 +70,9 @@ def prep_prediction(sample_path, csv_path, max_oriCs):
 
     # OriC processing
     for i in range(max_oriCs):
-        if i < len(preferred_properties['oriC_middles']):
-            row.append(preferred_properties['oriC_edges'][i])
-            row.append(preferred_properties['oriC_middles'][i])
-        else:
-            row.append(np.nan)
-            row.append(np.nan)
-
+        row.append(preferred_properties['oriC_edges'][i]) if i < len(preferred_properties['oriC_edges']) else row.append(np.nan)
+    for i in range(max_oriCs):
+        row.append(preferred_properties['oriC_middles'][i]) if i < len(preferred_properties['oriC_middles']) else row.append(np.nan)
     for i in range(max_oriCs):
         row.append(all_oriCs['xy_oriCs'][i]) if i < len(all_oriCs['xy_oriCs']) else row.append(np.nan)
     for i in range(max_oriCs):
