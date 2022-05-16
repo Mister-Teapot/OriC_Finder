@@ -404,7 +404,7 @@ def find_oriCs(filename, oriC_size=500):#, window_size=150000):
     peaks_x,  peak_windows_x  = process_array(x , mode='min', window_size=window_size)
     peaks_y,  peak_windows_y  = process_array(y , mode='max', window_size=window_size)
     peaks_gc, peak_windows_gc = process_array(gc, mode='min', window_size=window_size)
-    # pf.plot_Z_curve_2D([x, y], [peaks_x, peaks_y], name)
+    pf.plot_Z_curve_2D([x, y], [peaks_x, peaks_y], name)
 
     # Getting prefered option
     matched_peaks, option = process_matches( (x, y, gc), (peaks_x, peaks_y, peaks_gc), (peak_windows_x, peak_windows_y, peak_windows_gc) )
@@ -437,7 +437,8 @@ def find_oriCs(filename, oriC_size=500):#, window_size=150000):
         'o_penalty'     : o_penalty,
         'd_penalty'     : d_penalties,
         'false_order'   : false_order,
-        'seq_size'      : len(sequence)
+        'seq_size'      : len(sequence),
+        'gc_conc'       : ( sequence.count('G') + sequence.count('C') ) / len(sequence)
     }
 
     # Getting all options
@@ -457,10 +458,11 @@ if __name__ == '__main__':
     # oriC in max of y (Amino vs Keto)
 
     # For testing a small folder
-    for fasta in os.listdir('./worst_fastas'):
-        file = os.path.join('worst_fastas', fasta)
-        # name, seq = read_FASTA(file)
-        # print(name, len(seq))
+    lengths = []
+    for fasta in os.listdir('./worst_fastas/worsened_most_v1_to_v2'):
+        file = os.path.join('worst_fastas', 'worsened_most_v1_to_v2', fasta)
+        # _, seq = read_FASTA(file)
+        # lengths.append(len(seq))
         preferred_properties, all_oriCs = find_oriCs(file)
     
         name    = preferred_properties['name']
@@ -475,11 +477,11 @@ if __name__ == '__main__':
             print(key, all_oriCs[key])
 
         pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [preferred_properties['oriC_middles']]*3, name)
-        # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
+        # pf.plot_skew(GC_skew, [preferred_properties['oriC_middles']], name)
         # pf.plot_Z_curve_3D(Z_curve, name)
 
     # For Testing single files
-    # preferred_properties, all_oriCs = find_oriCs('./worst_fastas/NC_016111.fasta')
+    # preferred_properties, all_oriCs = find_oriCs('./worst_fastas/worsened_most_v1_to_v2/NC_010175.fasta')
 
     # name    = preferred_properties['name']
     # Z_curve = preferred_properties['z_curve']
