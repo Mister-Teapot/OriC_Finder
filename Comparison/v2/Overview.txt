@@ -1,0 +1,155 @@
+Max genome length          : 13033779
+Min genome length          : 166163
+Mean genome length         : 3567268
+Deviation in genome length : 1790029
+Genome size is not very consistent. The max distance that two oriC can be from each other will
+be set to 2.0 % of the sequence length of the total genome length rather than a fixed number for all genomes.
+
+False Order
+
+INFORMATION
+There were 1183 organisms.
+	733 times both databases predicted the same amount of oriCs.
+	235 times DoriC predicted more oriCs.
+	215 times mine predicted more oriCs.
+
+If a DoriC sample had 2 oriC and the predictor predicted 4, we only use the top 2 predicted oriC to create the matches.
+The extra oriCs found by my predictor did not lead to any more matches with oriCs from DoriC.
+	There were a total of 1484 oriCs predicted by DoriC
+	There were a total of 1462 oriCs predicted by my predictor
+
+1209 out of 1484 (81.47 %) DoriC oriCs were found by my predictor with max accepted distance of 2.0 % of the sequence length
+
+2 DoriC oriC were matched to mutliple Z_oriC. (> 0 is not okay)
+	This means there are Z_oriC that are closer than 2.0 % of the sequence length to each other.
+265 Z_oriC were matched to mutliple DoriC oriC. (> 0 is okay)
+	This means there are DoriC oriC that are closer than 2.0 % of the sequence length to each other.
+
+The Z_oriC was off by 101757 bp on average.
+
+N-Penalty
+
+INFORMATION
+There were 1322 organisms.
+	750 times both databases predicted the same amount of oriCs.
+	235 times DoriC predicted more oriCs.
+	337 times mine predicted more oriCs.
+
+If a DoriC sample had 2 oriC and the predictor predicted 4, we only use the top 2 predicted oriC to create the matches.
+The extra oriCs found by my predictor did not lead to any more matches with oriCs from DoriC.
+	There were a total of 1640 oriCs predicted by DoriC
+	There were a total of 1740 oriCs predicted by my predictor
+
+1261 out of 1640 (76.89 %) DoriC oriCs were found by my predictor with max accepted distance of 2.0 % of the sequence length
+
+5 DoriC oriC were matched to mutliple Z_oriC. (> 0 is not okay)
+	This means there are Z_oriC that are closer than 2.0 % of the sequence length to each other.
+273 Z_oriC were matched to mutliple DoriC oriC. (> 0 is okay)
+	This means there are DoriC oriC that are closer than 2.0 % of the sequence length to each other.
+
+The Z_oriC was off by 123938 bp on average.
+
+D-Penalty
+
+INFORMATION
+There were 1322 organisms.
+	750 times both databases predicted the same amount of oriCs.
+	235 times DoriC predicted more oriCs.
+	337 times mine predicted more oriCs.
+
+If a DoriC sample had 2 oriC and the predictor predicted 4, we only use the top 2 predicted oriC to create the matches.
+The extra oriCs found by my predictor did not lead to any more matches with oriCs from DoriC.
+	There were a total of 1640 oriCs predicted by DoriC
+	There were a total of 1740 oriCs predicted by my predictor
+
+1261 out of 1640 (76.89 %) DoriC oriCs were found by my predictor with max accepted distance of 2.0 % of the sequence length
+
+5 DoriC oriC were matched to mutliple Z_oriC. (> 0 is not okay)
+	This means there are Z_oriC that are closer than 2.0 % of the sequence length to each other.
+273 Z_oriC were matched to mutliple DoriC oriC. (> 0 is okay)
+	This means there are DoriC oriC that are closer than 2.0 % of the sequence length to each other.
+
+The Z_oriC was off by 157541 bp on average.
+
+0-option
+INFORMATION
+There were 1322 organisms.
+	660 times both databases predicted the same amount of oriCs.
+	340 times DoriC predicted more oriCs.
+	322 times mine predicted more oriCs.
+
+If a DoriC sample had 2 oriC and the predictor predicted 4, we only use the top 2 predicted oriC to create the matches.
+The extra oriCs found by my predictor did not lead to any more matches with oriCs from DoriC.
+	There were a total of 1640 oriCs predicted by DoriC
+	There were a total of 1590 oriCs predicted by my predictor
+
+1161 out of 1640 (70.79 %) DoriC oriCs were found by my predictor with max accepted distance of 2.0 % of the sequence length
+
+5 DoriC oriC were matched to mutliple Z_oriC. (> 0 is not okay)
+	This means there are Z_oriC that are closer than 2.0 % of the sequence length to each other.
+254 Z_oriC were matched to mutliple DoriC oriC. (> 0 is okay)
+	This means there are DoriC oriC that are closer than 2.0 % of the sequence length to each other.
+
+The Z_oriC was off by 124430 bp on average.
+
+1-option
+INFORMATION
+There were 59 organisms.
+	46 times both databases predicted the same amount of oriCs.
+	13 times DoriC predicted more oriCs.
+	0 times mine predicted more oriCs.
+
+If a DoriC sample had 2 oriC and the predictor predicted 4, we only use the top 2 predicted oriC to create the matches.
+The extra oriCs found by my predictor did not lead to any more matches with oriCs from DoriC.
+	There were a total of 72 oriCs predicted by DoriC
+	There were a total of 59 oriCs predicted by my predictor
+
+37 out of 72 (51.39 %) DoriC oriCs were found by my predictor with max accepted distance of 2.0 % of the sequence length
+
+0 DoriC oriC were matched to mutliple Z_oriC. (> 0 is not okay)
+7 Z_oriC were matched to mutliple DoriC oriC. (> 0 is okay)
+	This means there are DoriC oriC that are closer than 2.0 % of the sequence length to each other.
+
+The Z_oriC was off by 79635 bp on average.
+
+2-option
+INFORMATION
+There were 1322 organisms.
+	642 times both databases predicted the same amount of oriCs.
+	252 times DoriC predicted more oriCs.
+	428 times mine predicted more oriCs.
+
+If a DoriC sample had 2 oriC and the predictor predicted 4, we only use the top 2 predicted oriC to create the matches.
+The extra oriCs found by my predictor did not lead to any more matches with oriCs from DoriC.
+	There were a total of 1640 oriCs predicted by DoriC
+	There were a total of 1808 oriCs predicted by my predictor
+
+1244 out of 1640 (75.85 %) DoriC oriCs were found by my predictor with max accepted distance of 2.0 % of the sequence length
+
+2 DoriC oriC were matched to mutliple Z_oriC. (> 0 is not okay)
+	This means there are Z_oriC that are closer than 2.0 % of the sequence length to each other.
+282 Z_oriC were matched to mutliple DoriC oriC. (> 0 is okay)
+	This means there are DoriC oriC that are closer than 2.0 % of the sequence length to each other.
+
+The Z_oriC was off by 105254 bp on average.
+
+3-option
+INFORMATION
+There were 1322 organisms.
+	672 times both databases predicted the same amount of oriCs.
+	263 times DoriC predicted more oriCs.
+	387 times mine predicted more oriCs.
+
+If a DoriC sample had 2 oriC and the predictor predicted 4, we only use the top 2 predicted oriC to create the matches.
+The extra oriCs found by my predictor did not lead to any more matches with oriCs from DoriC.
+	There were a total of 1640 oriCs predicted by DoriC
+	There were a total of 1743 oriCs predicted by my predictor
+
+1259 out of 1640 (76.77 %) DoriC oriCs were found by my predictor with max accepted distance of 2.0 % of the sequence length
+
+4 DoriC oriC were matched to mutliple Z_oriC. (> 0 is not okay)
+	This means there are Z_oriC that are closer than 2.0 % of the sequence length to each other.
+265 Z_oriC were matched to mutliple DoriC oriC. (> 0 is okay)
+	This means there are DoriC oriC that are closer than 2.0 % of the sequence length to each other.
+
+The Z_oriC was off by 95908 bp on average.

@@ -15,7 +15,7 @@ sys.path.append('../OriC_Finder')
 import oriC_Finder as of
 import plotting_functions as pf
 
-MAX_DIST = 1/50
+MAX_DIST = 3/100
 
 
 def make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv):
@@ -45,29 +45,11 @@ def make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv):
                 in_both_df[j].append( DoriC_df.loc[DoriC_df['RefSeq'] == sample['RefSeq'], j].values[0] ) # Series.values -> ['element'], very annoying
     
     comparator_df = pd.DataFrame(in_both_df)
-
-    # # Extract nod-penalties (Do this in oriC_to_csv next time)
-    # comparator_df['Penalties'] = comparator_df['Penalties'].str.split(r'\], ')
-
-    # comparator_df['N_penalty'] = comparator_df['Penalties'].str[0]
-    # comparator_df['N_penalty'] = comparator_df['N_penalty'].str.lstrip('(') + ']'
-
-    # comparator_df['tmp'] = comparator_df['Penalties'].str[1]
-    # comparator_df['tmp'] = comparator_df['tmp'].str.split(r', \[')
-
-    # comparator_df['O_penalty'] = comparator_df['tmp'].str[0]
-    # comparator_df['O_penalty'] = comparator_df['O_penalty'].astype(int)
-
-    # comparator_df['D_penalty'] = comparator_df['tmp'].str[1]
-    # comparator_df['D_penalty'] = '[' + comparator_df['D_penalty'].str.rstrip(')')
-
-    # comparator_df.drop(columns=['Penalties', 'tmp'], inplace=True)
-
     comparator_df.to_csv(comparator_csv, index=False)
     return comparator_df
 
 
-def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_dist=30000, n=None, d=None):
+def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_dist=30000, n=None, d=None, alt_oriC=None):
     '''
     Compares results. Results can be loaded from a pandas.DataFrame OR csv.
     info       : If str, writes a text_file to the given location with some info on the analysis.
@@ -107,7 +89,10 @@ def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_di
 
         seq_len = sample['Sequence_length']
         D_oriC_cols = sorted( [i for i in sample.axes[0] if 'DoriC_oriC' in i], key=lambda x:x[-1] )
-        Z_oriC_cols = sorted( [i for i in sample.axes[0] if 'oriC_middle' in i], key=lambda x:x[-1] )[:2] # only use top 2 oriC if there is more than one
+        if alt_oriC is None:
+            Z_oriC_cols = sorted( [i for i in sample.axes[0] if 'oriC_middle' in i], key=lambda x:x[-1] )[:2] # only use top 2 oriC if there is more than one
+        else:
+            Z_oriC_cols = sorted( [i for i in sample.axes[0] if alt_oriC in i], key=lambda x:x[-1] )[:2]
     
         total_D_oriC += len(D_oriC_cols)
         total_Z_oriC += len(Z_oriC_cols)
@@ -152,7 +137,7 @@ def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_di
                         dist_2 = min(D_oriC, Z_oriC) + seq_len-1 - max(D_oriC, Z_oriC)
                         distances.append( (j, min(dist_1, dist_2)) )
                 elif n is not None:
-                    if sample['N_penalty'][j] <= n:
+                    if sample['N_penalty'] <= n:
                         dist_1 = max(D_oriC, Z_oriC) - min(D_oriC, Z_oriC)
                         dist_2 = min(D_oriC, Z_oriC) + seq_len-1 - max(D_oriC, Z_oriC)
                         distances.append( (j, min(dist_1, dist_2)) )
@@ -208,11 +193,11 @@ if __name__ == '__main__':
 
     # Output paths
     comparator_csv = 'Comparison/v2/in_both_sets_all.csv'
-    all_file_path  = 'Comparison/comparison_info_file_all.txt'
+    all_file_path  = 'Comparison/v2/comparison_info_file_all.txt'
 
     # Make or load csv
-    comparator_df = make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv=comparator_csv)
-    # comparator_df = pd.read_csv(comparator_csv)
+    # comparator_df = make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv=comparator_csv)
+    comparator_df = pd.read_csv(comparator_csv)
 
     # General info
     avg_seq_len = comparator_df['Sequence_length'].sum() // comparator_df.shape[0]
@@ -224,57 +209,60 @@ if __name__ == '__main__':
     print('Genome size is not very consistent. The max distance that two oriC can be from each other will')
     print(f'be set to {disp_dist} of the total genome length rather than a fixed number for all genomes.\n')
 
-    # Compare input databases
+    # # ALL DATA
     hist_all_df = compare_dbs(df=comparator_df, info_file_path=all_file_path, print_info=True, max_dist=MAX_DIST)
-    # hist_all_df.to_csv('Comparison/hist_all_df.csv', index=False)
-    # hist_all_df = pd.read_csv('Comparison/hist_all_df.csv')
-    # pf.distance_histogram(hist_all_df, log=True)
-    pf.distance_histogram(hist_all_df, log=False)
+    # hist_all_df.sort_values(by='Distance', inplace=True)
+    # print(hist_all_df.tail(10))
+    hist_all_df.to_csv('Comparison/v2/hist_all_df.csv', index=False)
+    # # hist_all_df = pd.read_csv('Comparison/hist_all_df.csv')
+    # # pf.distance_histogram(hist_all_df, log=True)
+    # # pf.distance_histogram(hist_all_df, log=False)
 
-    # All the same steps, but only the experimental data
-    # exp_file_path  = 'Comparison/comparison_info_file_experimental.txt'
+    # # All the same steps, but only the EXPERIMENTAL DATA
+    # exp_file_path  = 'Comparison/v2/comparison_info_file_experimental.txt'
     # exp_refseq = [ # Accessions that have been experimentally verified.
     #     'NC_000964', 'NC_002947', 'NC_003272', 'NC_003869', 'NC_003888', 'NC_005090', 'NC_006461', 'NC_007633', 'NC_000913', 'NC_003047',
     #     'NC_007604', 'NC_000962', 'NC_002696', 'NC_002971', 'NC_005363', 'NC_008255', 'NC_009850', 'NC_010546', 'NC_010547', 'NC_011916'
     # ]
     # experiment_df = comparator_df[comparator_df['RefSeq'].isin(exp_refseq)]
-    # hist_exp_df = compare_dbs(df=experiment_df, info_file_path=exp_file_path, print_info=False, max_dist=MAX_DIST)
-    # pf.distance_histogram(hist_exp_df, log=True)
-    # pf.distance_histogram(hist_exp_df, log=False)
+    # hist_exp_df = compare_dbs(df=experiment_df, info_file_path=exp_file_path, print_info=True, max_dist=MAX_DIST)
+    # # pf.distance_histogram(hist_exp_df, log=True)
+    # # pf.distance_histogram(hist_exp_df, log=False)
 
-    # Only plot those without False_order == False
+    # # Only plot those without False_order == False
+    # print('False Order\n')
     # order_df = comparator_df[comparator_df['False_order'] == False]
     # hist_order_df = compare_dbs(df=order_df, info_file_path=None, print_info=True, max_dist=MAX_DIST)
-    
+    # print()
+
     # # N-count in genome
     # print('N-Penalty\n')
-    # comparator_df['N_penalty'] = comparator_df['N_penalty'].map(literal_eval)
-    # n_list = [y for x in comparator_df['N_penalty'] for y in x]
+    # n_list = [x for x in comparator_df['N_penalty']]
     # avg_n = sum(n_list)/len(n_list)
-    # hist_n_penalty_df = compare_dbs(df=comparator_df, info_file_path=None, print_info=True, max_dist=MAX_DIST, n=avg_n)
+    # hist_n_penalty = compare_dbs(df=comparator_df, info_file_path=None, print_info=True, max_dist=MAX_DIST, n=avg_n)
+    # print()
 
-    # # Option used to determine oriC
-    # print('O-penalty')
-    # for i in [0, 200, 300]:
-    #     print(i, '\n')
-    #     hist_o_penalty_df = compare_dbs(df=comparator_df[comparator_df['O_penalty'] == i], info_file_path=None, print_info=True, max_dist=MAX_DIST)
-
-    # print('O: 0 or 3')
-    # hist_o_penalty_df = compare_dbs(df=comparator_df[comparator_df['O_penalty'].isin([0, 300])], info_file_path=None, print_info=True, max_dist=MAX_DIST)
-
-    # # # Distance between two mathced peaks
     # print('D-Penalty\n')
     # comparator_df['D_penalty'] = comparator_df['D_penalty'].map(literal_eval)
     # d_list = [y for x in comparator_df['D_penalty'] for y in x]
     # avg_d = sum(d_list)/len(d_list)
-    # hist_d_penalty_df = compare_dbs(df=comparator_df, info_file_path=None, print_info=True, max_dist=MAX_DIST, d=avg_d)
+    # hist_d_penalty = compare_dbs(df=comparator_df, info_file_path=None, print_info=True, max_dist=MAX_DIST, d=avg_d)
+    # print()
 
-    # pf.distance_histogram(hist_order_df, log=True)
-    # pf.distance_histogram(hist_order_df, log=False)
+    # # Option used to determine oriC
+    # print('0-option')
+    # zero_hist = compare_dbs(df=comparator_df, info_file_path=None, print_info=True, max_dist=MAX_DIST, alt_oriC='xy_oriC')
+    # print()
 
-    # # ...
-    # best_df = comparator_df[comparator_df['O_penalty'].isin([0, 300]) & comparator_df['False_order'] == False]
-    # hist_best_df = compare_dbs(df=best_df, info_file_path=None, print_info=True, max_dist=MAX_DIST)
-    # pf.distance_histogram(hist_best_df, log=False)
+    # print('1-option')
+    # one_df = comparator_df[comparator_df['O_penalty'] == 1]
+    # one_hist = compare_dbs(df=one_df, info_file_path=None, print_info=True, max_dist=MAX_DIST)
+    # print()
 
-    # print(hist_all_df.sort_values(by='Distance').tail(10))
+    # print('2-option')
+    # two_hist = compare_dbs(df=comparator_df, info_file_path=None, print_info=True, max_dist=MAX_DIST, alt_oriC='xgc_oriC')
+    # print()
+
+    # print('3-option')
+    # three_hist = compare_dbs(df=comparator_df, info_file_path=None, print_info=True, max_dist=MAX_DIST, alt_oriC='ygc_oriC')
+    # print()
