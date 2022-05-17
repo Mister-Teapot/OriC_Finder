@@ -8,7 +8,7 @@ import numpy as np
 # Set these before running
 DATASET_NAME = 'refseq_23'
 ON_CLUSTER   = False
-PARALLEL     = False
+PARALLEL     = True
 MAX_ORICS    = 10 # Assumption: No more than 10 oriC for a single organism are predicted
 
 # Self-made module
@@ -34,7 +34,7 @@ def init_settings(run_type, dataset_name, parallel):
     if run_type == 'cluster':
         data_path = '/tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel/' + dataset_name + '/bacteria'
         csv_path  = '/tudelft.net/staff-umbrella/GeneLocations/ZoyavanMeel/' + dataset_name + '/csvs'
-        cpus      = len(os.sched_getaffinity(0)) if parallel else 1
+        cpus      = 1
 
     if run_type == 'local':
         data_path = 'NCBI data prep/' + dataset_name + '/chromosomes_only'
@@ -51,7 +51,8 @@ def prep_prediction(sample_path, csv_path, max_oriCs):
     if os.path.exists(csv_path + '/' + accession + '.csv'):
         return
 
-    preferred_properties, all_oriCs = find_oriCs(sample_path)
+    # preferred_properties, all_oriCs = find_oriCs(sample_path)
+    preferred_properties = find_oriCs(sample_path)
 
     # Name processing
     name_list = preferred_properties['name'].split(' ')
@@ -63,22 +64,30 @@ def prep_prediction(sample_path, csv_path, max_oriCs):
     row.append(preferred_properties['seq_size'])
 
     # Quality of Prediction processing
-    row.append(preferred_properties['n_penalty'])
-    row.append(preferred_properties['o_penalty'])
-    row.append(preferred_properties['d_penalty'])
-    row.append(preferred_properties['false_order'])
+    row.append(preferred_properties['false_order']) # v1 & v2 &v3
+    row.append(preferred_properties['gc_conc'])     # v3
+    # row.append(preferred_properties['n_penalty']) # v1 & v2
+    # row.append(preferred_properties['o_penalty']) # v1 & v2
+    # row.append(preferred_properties['d_penalty']) # v1 & v2
 
     # OriC processing
-    for i in range(max_oriCs):
-        row.append(preferred_properties['oriC_edges'][i]) if i < len(preferred_properties['oriC_edges']) else row.append(np.nan)
+    ## v1 & v2 & v3
     for i in range(max_oriCs):
         row.append(preferred_properties['oriC_middles'][i]) if i < len(preferred_properties['oriC_middles']) else row.append(np.nan)
+
+    ## v3
     for i in range(max_oriCs):
-        row.append(all_oriCs['xy_oriCs'][i]) if i < len(all_oriCs['xy_oriCs']) else row.append(np.nan)
-    for i in range(max_oriCs):
-        row.append(all_oriCs['xgc_oriCs'][i]) if i < len(all_oriCs['xgc_oriCs']) else row.append(np.nan)
-    for i in range(max_oriCs):
-        row.append(all_oriCs['ygc_oriCs'][i]) if i < len(all_oriCs['ygc_oriCs']) else row.append(np.nan)
+        row.append(preferred_properties['occurances'][i]) if i < len(preferred_properties['occurances']) else row.append(np.nan)
+    
+    ## v1 & v2
+    # for i in range(max_oriCs):
+    #     row.append(preferred_properties['oriC_edges'][i]) if i < len(preferred_properties['oriC_edges']) else row.append(np.nan)
+    # for i in range(max_oriCs):
+    #     row.append(all_oriCs['xy_oriCs'][i]) if i < len(all_oriCs['xy_oriCs']) else row.append(np.nan)
+    # for i in range(max_oriCs):
+    #     row.append(all_oriCs['xgc_oriCs'][i]) if i < len(all_oriCs['xgc_oriCs']) else row.append(np.nan)
+    # for i in range(max_oriCs):
+    #     row.append(all_oriCs['ygc_oriCs'][i]) if i < len(all_oriCs['ygc_oriCs']) else row.append(np.nan)
 
     with open(csv_path + '/' + RefSeq + '.csv', 'w') as fh:
         writer = csv.writer(fh)
