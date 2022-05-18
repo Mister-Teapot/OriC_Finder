@@ -64,12 +64,12 @@ def calc_everything(seq):
     return np.asarray(x), np.asarray(y), np.asarray(z), np.asarray(gc_skew), n
 
 
-def detect_peaks(skew_array):
+def detect_peaks(curve):
     """Calculates peaks of 1D-np.array and returns its indeces."""
-    maxima, _ = sp.find_peaks( skew_array, distance=len(skew_array)//12)
-    maxima    = np.append(maxima, skew_array.argmax())
-    minima, _ = sp.find_peaks( np.negative(skew_array), distance=len(skew_array)//12)
-    minima    = np.append(minima, skew_array.argmin())
+    maxima, _ = sp.find_peaks( curve, distance=len(curve)//12)
+    maxima    = np.append(maxima, curve.argmax())
+    minima, _ = sp.find_peaks( np.negative(curve), distance=len(curve)//12)
+    minima    = np.append(minima, curve.argmin())
     return np.unique(np.concatenate( (maxima, minima), axis=0))
 
 
@@ -236,10 +236,9 @@ def get_false_order(seq, curve, oriC_locations, mode='max', window_size=500):
         - N-count in oriC           : if high and multiple oriC, could be a false extreme 
         - N-count in whole sequence : if high, could mean that the oriC has not yet been sequenced
     Return:
-        n_penalties : n_penalty score
         false_order : T|F, whether the order of the oriCs could be wrong due to 'N' bases in area around oriC
     '''
-    false_order = False
+    false_orders = []
     if len(oriC_locations) > 1:
         windows = get_peak_windows(len(seq), oriC_locations, window_size=window_size)
         n_per_oriC = []
@@ -252,19 +251,12 @@ def get_false_order(seq, curve, oriC_locations, mode='max', window_size=500):
         # NOTE: only checks the oriC in top position against the other oriCs, not every combination
         # This looks at cases where there are two peaks of similar heights/depths that are quite far apart.
         # e.g. if the x-curve was W-shaped, making it so you have two very similar minima. (or y-curve like M)
-        false_orders = []
         for i in range(1, len(n_per_oriC)):
-            pot_false_order = 0 # potential false ordering: not reliable
-            if mode == 'max' and curve[oriC_locations[0]] - n_per_oriC[0] <= curve[oriC_locations[i]] + n_per_oriC[i]:
-                pot_false_order += 1
-            elif mode == 'min' and curve[oriC_locations[0]] + n_per_oriC[0] >= curve[oriC_locations[i]] - n_per_oriC[i]:
-                pot_false_order += 1
-            false_orders.append(pot_false_order)
-        # Filter out non-false orders
-        false_orders = [x for x in false_orders if x != 0]
-        if len(false_orders) > 0: # This is bad: unreliable result
-            false_order = True
-    return false_order
+            if mode == 'max':
+                false_orders.append(curve[oriC_locations[0]] - n_per_oriC[0] <= curve[oriC_locations[i]] + n_per_oriC[i])
+            elif mode == 'min':
+                false_orders.append(curve[oriC_locations[0]] + n_per_oriC[0] >= curve[oriC_locations[i]] - n_per_oriC[i])
+    return any(false_orders)
 
 
 def calc_dist(curve_size, a, b):
@@ -283,15 +275,8 @@ def curve_combinations(curves_list, peaks_list, windows_list):
     return oriC_locations_list
 
 
-'''
-xy_1 = [...], xy_3 = [...], xy_5 = [...]
-xgc_1 = ...
-ygc_1 = ...
-
-9* lists of oriCs. Every oriC gets a 'x' out of 9* score to see how many other combinations also found that oriC. The oriCs with the highest score gets returned; multiple if tied.
-*Not every combination always finds an oriC.
-'''
 def get_adj_mat(curve_size, peaks):
+    '''Gets adjacency matrix for given peaks'''
     adj_mat = np.zeros((len(peaks), len(peaks)))
     for (i_a, a), (i_b, b) in combinations(enumerate(peaks), r=2):
         dist = calc_dist(curve_size, a, b)
@@ -300,14 +285,26 @@ def get_adj_mat(curve_size, peaks):
     return adj_mat
 
 
-def _DFS_peaks(idx, adj_mat, visited, connected_list, threshold):
+def get_connected_groups(peaks, adj_mat, threshold):
+    visited = [False] * len(peaks)
+    connected_groups_idx = []
+    for i in range(len(peaks)):
+        if not visited[i]:
+            group = []
+            _, _, visited, group, _ = _DFS_recurse(i, adj_mat, visited, group, threshold=threshold)
+            connected_groups_idx.append(group)
+    connected_groups_vals = [ [peaks[i] for i in idx_group] for idx_group in connected_groups_idx ]
+    return connected_groups_vals
+
+
+def _DFS_recurse(idx, adj_mat, visited, connected_list, threshold):
     visited[idx] = True
     connected_list.append(idx)
     for i in range(len(visited)):
         if i == idx:
             continue
         elif adj_mat[i][idx] <= threshold and not visited[i]:
-            _, _, visited, connected_list, _ = _DFS_peaks(i,adj_mat,visited, connected_list, threshold)
+            _, _, visited, connected_list, _ = _DFS_recurse(i,adj_mat,visited, connected_list, threshold)
     return idx, adj_mat, visited, connected_list, threshold
 
 
@@ -334,7 +331,7 @@ def merge_oriCs(curve_size, groups):
 
 def find_oriCs(filename):
     '''
-    VERSION 2
+    VERSION 3
     Locates potential oriC based on Z-curve and GC-skew analysis.
     Three window_sizes are used: 1, 3 and 5 % of the total genome length. The oriCs that were found by most combinations, get returned.
     Input:
@@ -361,36 +358,27 @@ def find_oriCs(filename):
     matrix = get_adj_mat(len(sequence), peaks)
 
     # Depth-First Search
-    visited = [False] * len(peaks)
-    connected_groups_idx = []
-    for i in range(len(peaks)):
-        if not visited[i]:
-            group = []
-            _, _, visited, group, _ = _DFS_peaks(i, matrix, visited, group, threshold=int(len(sequence)*windows[-1]))
-            connected_groups_idx.append(group)
+    connected_groups = get_connected_groups(peaks, matrix, int(len(sequence)*windows[-1]))
 
-    # Convert indexes to values
-    connected_groups_vals = [ [peaks[i] for i in idx_group] for idx_group in connected_groups_idx ]
-
-    # Remove potential oriCs if it was not matched to any other.
-    connected_groups_vals = [x for x in connected_groups_vals if len(x) > 1]
+    # Remove potential oriC if it was not matched to any other.
+    connected_groups = [x for x in connected_groups if len(x) > 1]
 
     # Get oriCs
-    oriCs, occurances = merge_oriCs(len(sequence), connected_groups_vals)
+    oriCs, occurances = merge_oriCs(len(sequence), connected_groups)
 
     # Check false order
     false_order = any( get_false_order( sequence, i[0], oriCs, mode=i[1], window_size=int(len(sequence)*windows[-1]) ) for i in ((x, 'min'), (y, 'max'), (gc, 'min')) )        
 
     # Final dictionary
     preferred_oriC_properties = {
-        'name'          : name,
-        'oriC_middles'  : oriCs,
-        'occurances'    : occurances,
-        'z_curve'       : (x, y, z),
-        'gc_skew'       : gc,
-        'false_order'   : false_order,
-        'seq_size'      : len(sequence),
-        'gc_conc'       : ( sequence.count('G') + sequence.count('C') ) / len(sequence)
+        'name'         : name,
+        'oriC_middles' : oriCs,
+        'occurances'   : occurances,
+        'z_curve'      : (x, y, z),
+        'gc_skew'      : gc,
+        'false_order'  : false_order,
+        'seq_size'     : len(sequence),
+        'gc_conc'      : ( sequence.count('G') + sequence.count('C') ) / len(sequence)
     }
 
     return preferred_oriC_properties
@@ -398,8 +386,8 @@ def find_oriCs(filename):
 
 if __name__ == '__main__':
     # For testing a small folder
-    # for fasta in os.listdir('./worst_fastas/v2'):
-    #     file = os.path.join('worst_fastas', 'v2', fasta)
+    # for fasta in os.listdir('./worst_fastas/v3_min_0.6'):
+    #     file = os.path.join('worst_fastas', 'v3_min_0.6', fasta)
     #     preferred_properties = find_oriCs(file)
 
     #     name    = preferred_properties['name']
@@ -416,7 +404,7 @@ if __name__ == '__main__':
     #     # pf.plot_Z_curve_3D(Z_curve, name)
 
     # For Testing single files
-    properties = find_oriCs('./worst_fastas/worsened_most_v1_to_v2/NC_010175.fasta')
+    properties = find_oriCs('./worst_fastas/v3_min_0.6/NZ_CP018845.fasta')
     name    = properties['name']
     Z_curve = properties['z_curve']
     GC_skew = properties['gc_skew']
