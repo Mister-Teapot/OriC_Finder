@@ -5,12 +5,22 @@ import matplotlib.pyplot as plt
 pd.set_option('display.width', None)
 pd.set_option('display.max_colwidth', 20)
 
-distances_v1 = pd.read_csv('Comparison/v1/hist_all_df.csv').sort_values(by=['RefSeq'], ignore_index=True)
-distances_load = pd.read_csv('Comparison/v2/hist_all_df.csv').sort_values(by=['RefSeq'], ignore_index=True)
+CSV_1 = 'v1'
+CSV_2 = 'v3'
 
-distances_v2 = distances_load[distances_load['RefSeq'].isin(distances_v1['RefSeq'])].copy()
-distances_v2.reset_index(drop=True, inplace=True)
-distances_v2.sort_values(by=['RefSeq'], ignore_index=True, inplace=True)
+distances_v1 = pd.read_csv('Comparison/'+CSV_1+'/hist_all_df.csv').sort_values(by=['RefSeq'], ignore_index=True)
+distances_load = pd.read_csv('Comparison/'+CSV_2+'/hist_all_df.csv').sort_values(by=['RefSeq'], ignore_index=True)
+
+if distances_load.shape[0] > distances_v1.shape[0]:
+    distances_v2 = distances_load[distances_load['RefSeq'].isin(distances_v1['RefSeq'])].copy()
+    distances_v2.reset_index(drop=True, inplace=True)
+    distances_v2.sort_values(by=['RefSeq'], ignore_index=True, inplace=True)
+else:
+    distances_v2 = distances_load.copy()
+    distances_v1 = distances_v1[distances_v1['RefSeq'].isin(distances_v2['RefSeq'])].copy()
+    distances_v1.reset_index(drop=True, inplace=True)
+    distances_v1.sort_values(by=['RefSeq'], ignore_index=True, inplace=True)
+del distances_load
 
 df = pd.read_csv('Comparison/v2/in_both_sets_all.csv').sort_values(by=['RefSeq'], ignore_index=True)
 
@@ -48,18 +58,18 @@ print('Distances worsened on average :', int(rel_worse.mean()), 'bp')
 print()
 print('Average seq_len of genomes with improved predictions :', int(merged[merged['RefSeq'].isin(better_distance['RefSeq'])]['Sequence_length'].mean()), 'bp')
 print('Average seq_len of genomes with worsened predictions :', int(merged[merged['RefSeq'].isin(worse_distance['RefSeq'])]['Sequence_length'].mean()), 'bp')
-print()
-print(f'Average option of genomes with improved predictions : {merged[merged["RefSeq"].isin(better_distance["RefSeq"])]["O_penalty"].mean():.3f}')
-print(f'Average option of genomes with worsened predictions : {merged[merged["RefSeq"].isin(worse_distance["RefSeq"])]["O_penalty"].mean():.3f}')
+# print()
+# print(f'Average option of genomes with improved predictions : {merged[merged["RefSeq"].isin(better_distance["RefSeq"])]["O_penalty"].mean():.3f}')
+# print(f'Average option of genomes with worsened predictions : {merged[merged["RefSeq"].isin(worse_distance["RefSeq"])]["O_penalty"].mean():.3f}')
 
-# plt.grid(axis='both', which='both')
-# plt.scatter(merged['Distance'], merged['Sequence_length'])
-# plt.xlabel('Distance from oriC (bp)')
-# plt.ylabel('Sequence length (bp)')
-# plt.show()
+plt.grid(axis='both', which='both')
+plt.scatter(merged['Distance'], merged['Sequence_length'])
+plt.xlabel('Distance from oriC (bp)')
+plt.ylabel('Sequence length (bp)')
+plt.show()
 
-# plt.grid(axis='both', which='both')
-# plt.scatter( merged['Distance']/merged['Sequence_length']*100, merged['Sequence_length'])
-# plt.xlabel('Distance from oriC (% of total genome)')
-# plt.ylabel('Sequence length (bp)')
-# plt.show()
+plt.grid(axis='both', which='both')
+plt.scatter( merged['Distance']/merged['Sequence_length']*100, merged['Sequence_length'])
+plt.xlabel('Distance from oriC (% of total genome)')
+plt.ylabel('Sequence length (bp)')
+plt.show()

@@ -341,6 +341,9 @@ def find_oriCs(filename):
     Return:
         properties  : Dictionary with oriC properties
     '''
+    # NOTE: Potential further improvements:
+    #   - AT% measure of oriC: should be characteristically higher than the rest of the genome.
+    #   - Essential gene proximity: genes like DnaA are very likely to be close to or on the oriC
     name, sequence = read_FASTA(filename)
     x, y, z, gc, n = calc_everything(sequence)
 

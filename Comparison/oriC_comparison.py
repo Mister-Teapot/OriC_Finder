@@ -16,6 +16,7 @@ import oriC_Finder as of
 import plotting_functions as pf
 
 MAX_DIST = 3/100
+VERSION  = 'v3'
 
 
 def make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv):
@@ -49,7 +50,7 @@ def make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv):
     return comparator_df
 
 
-def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_dist=30000, n=None, d=None, alt_oriC=None):
+def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_dist=30000, n=None, d=None, alt_oriC=None, use_confidence=None):
     '''
     Compares results. Results can be loaded from a pandas.DataFrame OR csv.
     info       : If str, writes a text_file to the given location with some info on the analysis.
@@ -82,6 +83,8 @@ def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_di
     total_D_oriC = 0
     total_Z_oriC = 0
     total_D_by_Z = 0
+    total_Z_that_found_a_D = 0
+    organisms = 0
 
     for i, sample_original in df.iterrows():
         sample = sample_original.copy()
@@ -90,22 +93,25 @@ def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_di
         seq_len = sample['Sequence_length']
         D_oriC_cols = sorted( [i for i in sample.axes[0] if 'DoriC_oriC' in i], key=lambda x:x[-1] )
         if alt_oriC is None:
-            Z_oriC_cols = sorted( [i for i in sample.axes[0] if 'oriC_middle' in i], key=lambda x:x[-1] )[:2] # only use top 2 oriC if there is more than one
+            Z_oriC_cols = sorted( [i for i in sample.axes[0] if 'oriC_middle' in i], key=lambda x:x[-1] )#[:2] # only use top 2 oriC if there is more than one
         else:
-            Z_oriC_cols = sorted( [i for i in sample.axes[0] if alt_oriC in i], key=lambda x:x[-1] )[:2]
-    
-        total_D_oriC += len(D_oriC_cols)
-        total_Z_oriC += len(Z_oriC_cols)
+            Z_oriC_cols = sorted( [i for i in sample.axes[0] if alt_oriC in i], key=lambda x:x[-1] )#[:2]
     
         if len(D_oriC_cols) > len(Z_oriC_cols):
             num_of_predictions[0] += 1
         elif len(D_oriC_cols) < len(Z_oriC_cols):
             num_of_predictions[1] += 1
 
-        # We match each Z_oriC to the closest DoriC_oriC with a max distance of 30k basepairs (like the peak_windows, but can be adjusted later).
         # If multiple Z_oriC match with the same DoriC_oriC : handle later + check vice versa too.
         D_oriC_middles = [ of.merge_peaks( seq_len, int( literal_eval(sample[D_oriC_col])[0] ), int( literal_eval(sample[D_oriC_col])[1] ) ) for D_oriC_col in D_oriC_cols ]
-        Z_oriC_middles = [ int(sample[Z_oriC_col]) for Z_oriC_col in Z_oriC_cols ]
+        if use_confidence is not None:
+            Z_oriC_middles = [ int(sample[Z_oriC_cols[i]]) for i in range(len(Z_oriC_cols)) if sample[f'Occurance_oriC_{i}'] >= use_confidence]
+        else:
+            Z_oriC_middles = [ int(sample[Z_oriC_cols[i]]) for i in range(len(Z_oriC_cols))]
+        total_D_oriC += len(D_oriC_cols)
+        total_Z_oriC += len(Z_oriC_middles)
+        if len(Z_oriC_middles) > 0:
+            organisms += 1
 
         ### Accuracy per point: how many points were properly matched
         window_size = max_dist if max_dist > 1 else int(seq_len * max_dist)
@@ -115,32 +121,29 @@ def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_di
         # Match all Z_oriC to D_oriC
         all_matches = of.match_peaks(D_oriC_middles, Z_oriC_middles, D_oriC_windows, Z_oriC_windows)
 
-        # Match only the top len(D_oriC) Z_oriC to D_oriC
-        top_matches = of.match_peaks(D_oriC_middles, Z_oriC_middles[:len(D_oriC_middles)], D_oriC_windows, Z_oriC_windows[:len(D_oriC_middles)])
-
         # Only work with top_matches for now (it does not differ from all_matches right now)
-        D_appearances = [match[0] for match in top_matches]
-        Z_appearances = [match[1] for match in top_matches]
+        D_appearances = [match[0] for match in all_matches]
+        Z_appearances = [match[1] for match in all_matches]
         total_D_by_Z += len(D_appearances)
+        total_Z_that_found_a_D += len(set(Z_appearances))
         multi_matching.append( ( len(D_appearances) != len(set(D_appearances)), len(Z_appearances) != len(set(Z_appearances)) ) )
 
         for i, D_oriC in enumerate(D_oriC_middles):
             distances = []
             for j, Z_oriC in enumerate(Z_oriC_middles):
+                to_append = False
                 if d is None and n is None:
-                    dist_1 = max(D_oriC, Z_oriC) - min(D_oriC, Z_oriC)
-                    dist_2 = min(D_oriC, Z_oriC) + seq_len-1 - max(D_oriC, Z_oriC)
-                    distances.append( (j, min(dist_1, dist_2)) )
+                    to_append = True
                 elif d is not None:
                     if sample['D_penalty'][j] <= d:
-                        dist_1 = max(D_oriC, Z_oriC) - min(D_oriC, Z_oriC)
-                        dist_2 = min(D_oriC, Z_oriC) + seq_len-1 - max(D_oriC, Z_oriC)
-                        distances.append( (j, min(dist_1, dist_2)) )
+                        to_append = True
                 elif n is not None:
                     if sample['N_penalty'] <= n:
-                        dist_1 = max(D_oriC, Z_oriC) - min(D_oriC, Z_oriC)
-                        dist_2 = min(D_oriC, Z_oriC) + seq_len-1 - max(D_oriC, Z_oriC)
-                        distances.append( (j, min(dist_1, dist_2)) )
+                        to_append = True
+                if to_append:
+                    dist_1 = max(D_oriC, Z_oriC) - min(D_oriC, Z_oriC)
+                    dist_2 = min(D_oriC, Z_oriC) + seq_len-1 - max(D_oriC, Z_oriC)
+                    distances.append( (j, min(dist_1, dist_2) ) )#min(dis_1, dist_2)/len(seq)
             if len(distances) != 0:
                 sorted_dists = min(distances, key=lambda x:abs(x[1]))
 
@@ -158,24 +161,24 @@ def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_di
     info_lines.append( f'\t{num_of_predictions[0]} times DoriC predicted more oriCs.' )
     info_lines.append( f'\t{num_of_predictions[1]} times mine predicted more oriCs.\n' )
 
-    did_not = 'did not' if all_matches == top_matches else ''
-    info_lines.append( f'If a DoriC sample had 2 oriC and the predictor predicted 4, we only use the top 2 predicted oriC to create the matches.' )
-    info_lines.append( f'The extra oriCs found by my predictor {did_not} lead to any more matches with oriCs from DoriC.' )
-    info_lines.append( f'\tThere were a total of {total_D_oriC} oriCs predicted by DoriC' )
-    info_lines.append( f'\tThere were a total of {total_Z_oriC} oriCs predicted by my predictor\n' )
+    info_lines.append( f'There were a total of {total_D_oriC} oriCs predicted by DoriC' )
+    info_lines.append( f'There were a total of {total_Z_oriC} oriCs predicted by my predictor\n' )
 
     multi_match_D = [match[0] for match in multi_matching if match[0]]
     multi_match_Z = [match[1] for match in multi_matching if match[1]]
     disp_dist = f'{max_dist*100} % of the sequence length' if max_dist <= 1 else f'{max_dist} bp'
 
-    info_lines.append( f'{total_D_by_Z} out of {total_D_oriC} ({total_D_by_Z/total_D_oriC*100:.2f} %) DoriC oriCs were found by my predictor with max accepted distance of {disp_dist}\n' )
+    info_lines.append('vvv')
+    info_lines.append( f'{total_D_by_Z} out of {total_D_oriC} ({total_D_by_Z/total_D_oriC*100:.2f} %) DoriC oriCs were found by my predictor with max accepted distance of {disp_dist}' )
+    info_lines.append( f'{total_Z_that_found_a_D} out of {total_Z_oriC} ({total_Z_that_found_a_D/total_Z_oriC*100:.2f} %) Z_oriCs found a D_oriC with max accepted distance of {disp_dist}' )
+    info_lines.append('^^^\n')
 
     info_lines.append( f'{len(multi_match_D)} DoriC oriC were matched to mutliple Z_oriC. (> 0 is not okay)' )
     info_lines.append( f'\tThis means there are Z_oriC that are closer than {disp_dist} to each other.') if len(multi_match_D) > 0 else None
     info_lines.append( f'{len(multi_match_Z)} Z_oriC were matched to mutliple DoriC oriC. (> 0 is okay)' )
     info_lines.append( f'\tThis means there are DoriC oriC that are closer than {disp_dist} to each other.\n') if len(multi_match_Z) > 0 else None
 
-    info_lines.append( f'The Z_oriC was off by { int(sum(all_distances["Distance"])/len(all_distances["Distance"])) } bp on average.' )
+    info_lines.append( f'The Z_oriC was off by { sum(all_distances["Distance"])/len(all_distances["Distance"]) } % of the genome on average.' )
 
     if info_file_path is not None:
         with open(info_file_path, 'w') as fh:
@@ -183,17 +186,22 @@ def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_di
     if print_info:
         print('\n'.join(info_lines))
 
+    csv_line = f'{use_confidence},{total_D_by_Z/total_D_oriC*100:.2f},{total_Z_that_found_a_D/total_Z_oriC*100:.2f},{ sum(all_distances["Distance"])/len(all_distances["Distance"]) }'
+    print(csv_line)
+    print(organisms)
+
     return pd.DataFrame(all_distances)
 
 
 if __name__ == '__main__':
     # Input paths
-    Z_curve_csv = 'NCBI data prep/oriC_predictions_v2_csvs/All_data.csv'
+    Z_curve_csv = 'NCBI data prep/oriC_predictions_'+VERSION+'_csvs/Predicted_4k.csv'
     DoriC_csv   = 'DoriC data prep/DoriC_oriC_concat_entries.csv'
 
     # Output paths
-    comparator_csv = 'Comparison/v2/in_both_sets_all.csv'
-    all_file_path  = 'Comparison/v2/comparison_info_file_all.txt'
+    comparator_csv = 'Comparison/'+VERSION+'/in_both_sets_all.csv'
+    all_file_path  = 'Comparison/'+VERSION+'/comparison_info_file_all.txt'
+    exp_file_path  = 'Comparison/'+VERSION+'/comparison_info_file_experimental.txt'
 
     # Make or load csv
     # comparator_df = make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv=comparator_csv)
@@ -210,25 +218,27 @@ if __name__ == '__main__':
     print(f'be set to {disp_dist} of the total genome length rather than a fixed number for all genomes.\n')
 
     # # ALL DATA
-    hist_all_df = compare_dbs(df=comparator_df, info_file_path=all_file_path, print_info=True, max_dist=MAX_DIST)
-    # hist_all_df.sort_values(by='Distance', inplace=True)
-    # print(hist_all_df.tail(10))
-    hist_all_df.to_csv('Comparison/v2/hist_all_df.csv', index=False)
-    # # hist_all_df = pd.read_csv('Comparison/hist_all_df.csv')
-    # # pf.distance_histogram(hist_all_df, log=True)
-    # # pf.distance_histogram(hist_all_df, log=False)
+    order_df = comparator_df[comparator_df['False_order'] == False]
+    # for i in range(11):
+    #     print('Minimum confidence:', i*10, '%')
+    hist_all_df = compare_dbs(df=order_df, info_file_path=None, print_info=True, max_dist=MAX_DIST, use_confidence=0.6)
+    hist_all_df.to_csv('Comparison/'+VERSION+'/hist_all_df_min_0.6.csv', index=False)
+    hist_all_df = pd.read_csv('Comparison/'+VERSION+'/hist_all_df_min_0.6.csv')
+    pf.distance_histogram(hist_all_df, log=True)
+    pf.distance_histogram(hist_all_df, log=False)
 
     # # All the same steps, but only the EXPERIMENTAL DATA
-    # exp_file_path  = 'Comparison/v2/comparison_info_file_experimental.txt'
     # exp_refseq = [ # Accessions that have been experimentally verified.
     #     'NC_000964', 'NC_002947', 'NC_003272', 'NC_003869', 'NC_003888', 'NC_005090', 'NC_006461', 'NC_007633', 'NC_000913', 'NC_003047',
     #     'NC_007604', 'NC_000962', 'NC_002696', 'NC_002971', 'NC_005363', 'NC_008255', 'NC_009850', 'NC_010546', 'NC_010547', 'NC_011916'
     # ]
     # experiment_df = comparator_df[comparator_df['RefSeq'].isin(exp_refseq)]
-    # hist_exp_df = compare_dbs(df=experiment_df, info_file_path=exp_file_path, print_info=True, max_dist=MAX_DIST)
+    # hist_exp_df = compare_dbs(df=experiment_df, info_file_path=None, print_info=True, max_dist=MAX_DIST, use_confidence=0.33)
     # # pf.distance_histogram(hist_exp_df, log=True)
-    # # pf.distance_histogram(hist_exp_df, log=False)
+    # pf.distance_histogram(hist_exp_df, log=False)
 
+##############################################################################################################################################
+# ONLY FOR V1 & V2
     # # Only plot those without False_order == False
     # print('False Order\n')
     # order_df = comparator_df[comparator_df['False_order'] == False]
