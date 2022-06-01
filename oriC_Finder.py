@@ -1,7 +1,5 @@
 # Libraries
-from msilib import sequence
 import os
-import time
 
 import scipy.signal as sp
 import numpy as np
@@ -363,16 +361,16 @@ def find_oriCs(filename: str = None, accession: str = None, email: str = None, A
 
     # Fetching and reading
     handle = fetch_FASTA(accession, email, API_key) if accession is not None else filename
-    accession, seq = read_FASTA(handle)
+    accession, sequence = read_FASTA(handle)
     del handle # either the path to a file or an entire FASTA file
 
     # Analysing sequence properties
-    x, y, z, gc = calc_disparities(seq)
+    x, y, z, gc = calc_disparities(sequence)
 
     windows = [0.01, 0.03, 0.05]
     peaks   = []
     for fraction in windows:
-        window_size = int(len(seq) * fraction)
+        window_size = int(len(sequence) * fraction)
         peaks_x  = process_array(x , mode='min', window_size=window_size)
         peaks_y  = process_array(y , mode='max', window_size=window_size)
         peaks_gc = process_array(gc, mode='min', window_size=window_size)
@@ -382,16 +380,16 @@ def find_oriCs(filename: str = None, accession: str = None, email: str = None, A
     matrix = get_adj_mat(peaks)
 
     # Depth-First Search
-    connected_groups = get_connected_groups(peaks, matrix, int(len(seq)*windows[-1]))
+    connected_groups = get_connected_groups(peaks, matrix, int(len(sequence)*windows[-1]))
 
     # Remove potential oriC if it was not matched to any other.
     connected_groups = [x for x in connected_groups if len(x) > 1]
 
     # Get oriCs
-    oriCs, occurances = merge_oriCs(len(seq), connected_groups, window_size=int(len(seq)*windows[-1]))
+    oriCs, occurances = merge_oriCs(len(sequence), connected_groups, window_size=int(len(sequence)*windows[-1]))
 
     # Check false order
-    false_order = any( get_false_order( seq, i[0], oriCs, mode=i[1]) for i in ((x, 'min'), (y, 'max'), (gc, 'min')) )        
+    false_order = any( get_false_order( sequence, i[0], oriCs, mode=i[1]) for i in ((x, 'min'), (y, 'max'), (gc, 'min')) )        
 
     # Final dictionary
     preferred_oriC_properties = {
@@ -401,8 +399,8 @@ def find_oriCs(filename: str = None, accession: str = None, email: str = None, A
         'z_curve'      : (x, y, z),
         'gc_skew'      : gc,
         'false_order'  : false_order,
-        'seq_size'     : len(seq),
-        'gc_conc'      : ( seq.count('G') + seq.count('C') ) / len(seq)
+        'seq_size'     : len(sequence),
+        'gc_conc'      : ( sequence.count('G') + sequence.count('C') ) / len(sequence)
     }
 
     return preferred_oriC_properties
