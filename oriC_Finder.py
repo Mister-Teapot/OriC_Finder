@@ -1,170 +1,19 @@
 # Libraries
-import os, re, warnings
+import os, warnings
 import scipy.signal as sp
 import numpy as np
+import pandas as pd
 
 from itertools import combinations, product
-from typing import Union, TextIO
-from Bio import SeqIO, Entrez, SeqRecord
+from typing import Union
 
-# Self-made module
+# Self-made modules
+from peak import Peak
+import parsers
 import plotting_functions as pf
 
 # Set cwd to location of this script
 os.chdir( os.path.dirname( os.path.abspath(__file__) ) )
-
-
-def fetch_file(accession: str, email: str, api_key: Union[str,None], rettype: str) -> TextIO:
-    """Downloads the given file_tpye of the given accession in temporary memory"""
-    Entrez.email = email
-    if api_key is not None:
-        Entrez.api_key = api_key
-    return Entrez.efetch(db="nuccore", id=accession, rettype=rettype, retmode="text")
-
-
-def read_FASTA(handle: TextIO) -> SeqRecord.SeqRecord:
-    """Read a file and returns the SeqRecord of only the first entry in the file"""
-    Seq_records = SeqIO.parse(handle, 'fasta')
-    Seq_obj = next(Seq_records)
-    return Seq_obj.id, Seq_obj.seq 
-
-'''
-NOTE to self:
-    For the DoriC files on the cluster:
-        - bacteria: FASTA files of all accessions in DoriC
-        - gene_info_files: gene information data of accessions in DoriC that are CIRCULAR and BACTERIA
-'''
-
-def read_gene_info(handle: TextIO , genes_list: list) -> dict:
-    """Read FASTA-file acquired with rettype='fasta_cds_na'."""
-    obj = SeqIO.parse(handle, 'fasta')
-    genes = [gene.lower() for gene in genes_list]
-    genes_dict = {}
-    for gene in obj:
-        features = [x.split('=') for x in re.findall(r"\[(.*?)\]", gene.description) if '=' in x]
-        feature_dict = {feature[0] : feature[1] for feature in features}
-        try: gene_name = feature_dict.pop('gene')
-        except KeyError:
-            try: gene_name = feature_dict['protein'].split(' ')[0]
-            except KeyError: continue
-        if gene_name.lower() in genes:
-            genes_dict.update({gene_name : feature_dict})
-    return genes_dict
-
-
-class Peak():
-    def __init__(self, middle: int, seq_len: int, window_size: int):
-        '''
-        - five_side  : 5' side of the window
-        - three_side : 3' side of the window.
-        '''
-        self.middle = middle
-        self.seq_len = seq_len
-        self.window_size = window_size
-        self.split = False
-
-        five_side = self.middle - self.window_size // 2
-        three_side = self.middle + self.window_size // 2
-
-        if five_side < 0:
-            self.split = True
-            five_side += self.seq_len-1
-        if three_side > self.seq_len-1:
-            self.split = True
-            three_side -= self.seq_len-1
-
-        self.five_side = five_side
-        self.three_side = three_side
-
-    @staticmethod
-    def calc_dist(curve_size: int, a: int, b: int) -> int:
-        '''Calculate the distance of self to other in bp'''
-        dist_1 = max(a, b) - min(a, b)
-        dist_2 = min(a, b) + curve_size-1 - max(a, b)
-        return min(dist_1, dist_2)
-
-    @staticmethod
-    def _get_peaks_to_merge(peaks: list) -> list:
-        """
-        Get the indeces that give the same value in the curve and are in eachothers window.
-        Input:
-        - ``peaks``          : list of Peaks of a curve
-        Return:
-        - ``peaks_to_merge`` : Nested list. Each sublist contains the two Peaks that have to be merged
-        """
-        peaks_to_merge = []
-        for peak_i, peak_j in combinations(peaks, 2):
-            if peak_i.contains_point(peak_j.middle):
-                peaks_to_merge.append([peak_i, peak_j])
-        return peaks_to_merge
-
-    @staticmethod
-    def get_middle(self: Union[int, "Peak"] , other: Union[int, "Peak"] , curve_size=None) -> int:
-        """
-        Calculate the distance between Peak a and b on circular DNA.
-        Returns a new Peak.middle (int) in the middle of a and b
-        """
-        a = self if not isinstance(self, Peak) else self.middle
-        b = other if not isinstance(other, Peak) else other.middle
-        seq_len = self.seq_len if curve_size is None and isinstance(self, Peak) else curve_size
-
-        dist_1 = max(a, b) - min(a, b)
-        dist_2 = min(a, b) + seq_len-1 - max(a, b)
-
-        if dist_2 < dist_1:
-            merged_idx = min(a, b) - dist_2//2
-            if merged_idx < 0:
-                merged_idx = seq_len-1 + merged_idx
-        else:
-            merged_idx = min(a, b) + dist_1//2
-        return merged_idx
-
-    def intersecting_windows(self, other) -> bool:
-        '''T|F wether self's window intersects with other's window'''
-        if not isinstance(other, Peak):
-            raise ValueError(f'other is a {type(other)}, must be a Peak object')
-        # f = five_side, t = three_side
-        f_t, t_f = Peak.calc_dist(self.seq_len, self.five_side, other.three_side), Peak.calc_dist(self.seq_len, self.three_side, other.five_side)
-        f_f, t_t = Peak.calc_dist(self.seq_len, self.five_side, other.five_side), Peak.calc_dist(self.seq_len, self.three_side, other.three_side)
-        a, b = f_t <= self.window_size // 2 or t_f <= self.window_size // 2, f_f <= self.window_size // 2 and t_t <= self.window_size // 2
-        return a or b
-
-    def contains_point(self, point: int) -> bool:
-        '''T|F wether a point is within a Peak's window'''
-        five = Peak.calc_dist(self.seq_len, self.five_side, point)
-        three = Peak.calc_dist(self.seq_len, self.three_side, point)
-        return (five <= self.window_size and three <= self.window_size)
-
-    def __repr__(self):
-        return f'Peak(middle={self.middle}, window_size={self.window_size})'
-
-    def __str__(self):
-        return str(self.middle)
-
-    # Undefined __eq__ to remain hashable; only added the dunders I needed
-    def __lt__(self, other) -> bool:
-        return self.middle < other.middle
-
-    def __gt__(self, other) -> bool:
-        return self.middle > other.middle
-
-    def __add__(self, other) -> Union["Peak", int, float]:
-        if isinstance(other, Peak):
-            return Peak(self.middle + other.middle, self.seq_len, self.window_size)
-        elif isinstance(other, int) or isinstance(other, float):
-            return self.middle + other
-
-    def __radd__(self, other):
-        return self.__add__(other)
-
-    def __sub__(self, other) -> Union["Peak", int, float]:
-        if isinstance(other, Peak):
-            return Peak(self.middle - other.middle, self.seq_len, self.window_size)
-        elif isinstance(other, int) or isinstance(other, float):
-            return self.middle - other
-
-    def __rsub__(self, other):
-        return self.__sub__(other)
 
 
 def calc_disparities(seq: str) -> tuple:
@@ -311,7 +160,7 @@ def get_adj_mat(peaks_a: list, peaks_b: list = None) -> np.ndarray:
         adj_mat = np.zeros((len(peaks_a), len(peaks_b)))
         iterator = product(enumerate(peaks_a), enumerate(peaks_b))
     for (i_a, a), (i_b, b) in iterator:
-        dist = Peak.calc_dist(a.seq_len, a.middle, b.middle)
+        dist = Peak.calc_dist(a.middle, b.middle, a.seq_len)
         adj_mat[i_a, i_b] = dist
         if peaks_b is None:
             adj_mat[i_b, i_a] = dist
@@ -362,35 +211,22 @@ def merge_oriCs(curve_size: int, groups: list, window_size: int = 500) -> tuple:
     return oriCs, occurances
 
 
-def handle_location(location: str) -> list:
-    '''Gene locations come in four flavours, each has to be handled differently.'''
-    handled = []
-    if 'complement' in location:
-        handled.append( location.lstrip('complement(').rstrip(')').split('..') )
-    elif 'join' in location:
-        locs_list = location.lstrip('complement(').rstrip(')').split(',')
-        handled.extend( [loc.split('..') for loc in locs_list] )
-    elif '<' in location:
-        handled.append( location.lstrip('<').split('..') )
-    else:
-        handled.append( location.split('..') )
-    return [[int(loc[0]), int(loc[1])] for loc in handled]
+def process_gene_loc_info(current_oriCs, current_occurances, matrix):
+    closest_counts = [col.argmin() for col in matrix.T]
+    best_idx = max(set(closest_counts), key = closest_counts.count)
 
-
-def extract_locations(seq_len: int, genes_dict: dict) -> list:
-    locations = []
-    for gene_dict in genes_dict.values():
-        locations.extend(handle_location(gene_dict['location']))
-    middles = [Peak(Peak.get_middle(loc[0], loc[1], seq_len), seq_len, 0) for loc in locations]
-    return middles
+    new_oriCs = [current_oriCs[best_idx]] + current_oriCs[:best_idx] + current_oriCs[best_idx+1:]
+    new_occurances = [current_occurances[best_idx]] + current_occurances[:best_idx] + current_occurances[best_idx+1:]
+    new_occurances[0] = 0.5 + new_occurances[0] if new_occurances[0] <= 0.5 else 1
+    return new_oriCs, new_occurances
 
 
 def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, use_gene_info: bool = True, accession: str = None, email: str = None, api_key: str = None) -> dict:
     '''
     VERSION 4\n
     Locates potential oriC based on Z-curve and GC-skew analysis.
-    Three window_sizes are used: 1, 3 and 5 % of the total genome length. The oriCs that were found by most combinations, get returned.
-    TODO: Add DnaA-box analysis
+    Three window_sizes are used: 1, 3 and 5 % of the total genome length. The oriCs that were found by most combinations, get used.
+    If ``use_gene_info``, then the location of the DnaA and DnaN genes will be considered in the ranking of the found oriCs. The oriC closest to the genes gets promoted.
 
     This function either reads a given FASTA file or fetches a FASTA of a given accession directly from the NCBI database.
 
@@ -400,7 +236,7 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, use_gene_info:
     - ``use_gene_info`` : T|F whether to use gene_info for oriC determination. Ignored if genes_fasta is provided.
     - ``accession``     : Accession number of the sequence to fetch
     - ``email``         : Email adress of your NCBI account
-    - ``API_key``       : API Key for downloading from the NCBI database (E-Utils). Optional, but recommended if fetching multiple sequences.
+    - ``api_key``       : API Key for downloading from the NCBI database (E-Utils). Optional, but recommended if fetching multiple sequences.
 
     Return:
     - ``properties`` : Dictionary with oriC properties
@@ -421,13 +257,13 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, use_gene_info:
         warnings.warn('Provided both a fasta to read and an accession to fetch. Will ignore accession and use accession from fasta.')
 
     # Sequence fetching and reading
-    seq_handle = fetch_file(accession, email, api_key, 'fasta') if genome_fasta is None else genome_fasta
-    _accession, sequence = read_FASTA(seq_handle)
-    del seq_handle # either the path to the file or the whole file
+    seq_handle = parsers.fetch_file(accession, email, api_key, 'fasta') if genome_fasta is None else genome_fasta
+    _accession, sequence = parsers.read_FASTA(seq_handle)
 
     # Analysing sequence properties
     x, y, z, gc = calc_disparities(sequence)
 
+    # Finding potential oriCs
     windows = [0.01, 0.03, 0.05]
     peaks   = []
     for fraction in windows:
@@ -435,38 +271,29 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, use_gene_info:
         peaks_x  = process_array(x , mode='min', window_size=window_size)
         peaks_y  = process_array(y , mode='max', window_size=window_size)
         peaks_gc = process_array(gc, mode='min', window_size=window_size)
-        peaks.extend( [y for x in curve_combinations( (x, y, gc), (peaks_x, peaks_y, peaks_gc) ) for y in x] )
+        peaks.extend( [j for i in curve_combinations( (x, y, gc), (peaks_x, peaks_y, peaks_gc) ) for j in i] )
 
-    # Connected components in undirected graph problem
+    # Finding connected components in undirected graph with a depth-first search
     matrix_pot_oriCs = get_adj_mat(peaks)
-
-    # Depth-First Search
     connected_groups = get_connected_groups(peaks, matrix_pot_oriCs, int(len(sequence)*windows[-1]))
 
-    # Get skew-oriCs
+    # Merge potential oriCs based on their groups
     oriCs, occurances = merge_oriCs(len(sequence), connected_groups, window_size=int(len(sequence)*windows[-1]))
 
     if use_gene_info:
         # Gene info fetching and reading
-        gene_handle = fetch_file(_accession, email, api_key, 'fasta_cds_na') if genes_fasta is None else genes_fasta
+        gene_handle = parsers.fetch_file(_accession, email, api_key, 'fasta_cds_na') if genes_fasta is None else genes_fasta
         genes_of_interest = ['dnaA', 'dnaN'] # 'gidA', 'parA', 'hemE' # not sure if these are proper yet
-        genes_dict = read_gene_info(gene_handle, genes_of_interest)
+        genes_dict = parsers.read_gene_info(gene_handle, genes_of_interest)
         del gene_handle
 
         if len(genes_dict.keys()) != 0:
             # Check oriC closest to genes of interest
-            gene_locations = extract_locations(len(sequence), genes_dict)
-            for i in range(len(gene_locations)):
-                print('gene', list(genes_dict.keys())[i], '@', gene_locations[i], 'bp')
+            gene_locations = parsers.extract_locations(len(sequence), genes_dict)
             matrix_oriCs_genes = get_adj_mat(oriCs, gene_locations)
-            closest_counts = [col.argmin() for col in matrix_oriCs_genes.T]
-            best_oriC_idx = max(set(closest_counts), key = closest_counts.count)
-            print(matrix_oriCs_genes)
 
-            # Only works for moving elements up in a list
-            oriCs.insert(0, oriCs.pop(best_oriC_idx))
-            occurances.insert(0, occurances.pop(best_oriC_idx))
-            occurances[0] += 0.5
+            # Rearange oriCs based on gen location information
+            oriCs, occurances = process_gene_loc_info(oriCs, occurances, matrix_oriCs_genes)
 
     # Check false order
     false_order = any( get_false_order( sequence, i[0], oriCs, mode=i[1]) for i in ((x, 'min'), (y, 'max'), (gc, 'min')) )    
@@ -489,35 +316,39 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, use_gene_info:
 
 if __name__ == '__main__':
     email = 'zoyavanmeel@gmail.com'
-    api_key = '795d705fb638507c9b2295c89cc64ee88108'
+
+    exp_refseq = [ # Accessions that have been experimentally verified.
+        'NC_000964', 'NC_002947', 'NC_003272', 'NC_003869', 'NC_003888', 'NC_005090', 'NC_006461', 'NC_007633', 'NC_000913', 'NC_003047',
+        'NC_007604', 'NC_000962', 'NC_002696', 'NC_002971', 'NC_005363', 'NC_008255', 'NC_009850', 'NC_010546', 'NC_010547', 'NC_011916'
+    ]
+
     # For testing a small folder
-    # for fasta in os.listdir('./test_fastas'):
-    #     file = os.path.join('test_fastas', fasta)
-    #     properties = find_oriCs(file)
+    for fasta in exp_refseq:
+        properties = find_oriCs(accession=fasta, email=email)
 
-    #     name    = properties['name']
-    #     Z_curve = properties['z_curve']
-    #     GC_skew = properties['gc_skew']
+        name    = properties['name']
+        Z_curve = properties['z_curve']
+        GC_skew = properties['gc_skew']
 
-    #     print(name)
-    #     print('QoP  :', properties['occurances'], properties['false_order'])
-    #     print('oriCs:', properties['oriC_middles'])
+        print(name)
+        print('QoP  :', properties['occurances'], properties['false_order'])
+        print('oriCs:', properties['oriC_middles'], '\n')
 
 
-    #     pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
-    #     # pf.plot_skew(GC_skew, [preferred_properties['oriC_middles']], name)
-    #     # pf.plot_Z_curve_3D(Z_curve, name)
+        pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
+        # pf.plot_skew(GC_skew, [preferred_properties['oriC_middles']], name)
+        # pf.plot_Z_curve_3D(Z_curve, name)
 
     # For Testing single files
-    properties = find_oriCs(accession='NZ_CP038631', email=email, api_key=api_key)
-    name    = properties['name']
-    Z_curve = properties['z_curve']
-    GC_skew = properties['gc_skew']
+    # properties = find_oriCs(accession='NZ_CP038631', email=email, api_key=api_key)
+    # name    = properties['name']
+    # Z_curve = properties['z_curve']
+    # GC_skew = properties['gc_skew']
 
-    print(name)
-    print('QoP  :', properties['occurances'], properties['false_order'])
-    print('oriCs:', properties['oriC_middles'])
+    # print(name)
+    # print('QoP  :', properties['occurances'], properties['false_order'])
+    # print('oriCs:', properties['oriC_middles'])
 
-    pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
-    # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
-    # pf.plot_Z_curve_3D(Z_curve, name)
+    # pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
+    # # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
+    # # pf.plot_Z_curve_3D(Z_curve, name)
