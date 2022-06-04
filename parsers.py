@@ -60,9 +60,10 @@ def extract_locations(seq_len: int, genes_dict: dict) -> list:
     '''Returns Peaks of the middle position of every gene in the dictionary.'''
     locations = []
     for gene_dict in genes_dict.values():
-        locations.extend(handle_location(gene_dict['location']))
-    # DEBUG REMOVE LATER
-    if None in locations:
-        return None
+        to_add = handle_location(gene_dict['location'])
+        # DEBUG REMOVE LATER
+        if to_add is None:
+            return None
+        locations.extend(to_add)
     middles = [Peak(Peak.get_middle(loc[0], loc[1], seq_len), seq_len, 0) for loc in locations]
     return middles
