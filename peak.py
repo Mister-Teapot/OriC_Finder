@@ -1,4 +1,4 @@
-from typing import Hashable, Union
+from typing import Union
 from itertools import combinations, product
 
 class Peak():
@@ -33,7 +33,7 @@ class Peak():
         return min(dist_1, dist_2)
 
     @staticmethod
-    def _get_peaks_to_merge(peaks: list) -> list:
+    def get_peaks_to_merge(peaks: list) -> list:
         """
         Get the indeces that give the same value in the curve and are in eachothers window.
         Input:

@@ -6,7 +6,7 @@ from typing import TextIO, Union
 # Self-made module
 from peak import Peak
 
-def fetch_file(accession: str, email: str, api_key: Union[str,None], rettype: str) -> TextIO:
+def fetch_file(accession: str, email: str, api_key: Union[str, None], rettype: str) -> TextIO:
     """Downloads the given file_tpye of the given accession in temporary memory"""
     Entrez.email = email
     if api_key is not None:
@@ -54,7 +54,7 @@ def handle_location(location: str) -> list:
 
 
 def extract_locations(seq_len: int, genes_dict: dict) -> list:
-    '''Returns the middle position of every gene in the dictionary.'''
+    '''Returns Peaks of the middle position of every gene in the dictionary.'''
     locations = []
     for gene_dict in genes_dict.values():
         locations.extend(handle_location(gene_dict['location']))

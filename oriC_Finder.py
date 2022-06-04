@@ -2,7 +2,6 @@
 import os, warnings
 import scipy.signal as sp
 import numpy as np
-import pandas as pd
 
 from itertools import combinations, product
 from typing import Union
@@ -112,7 +111,7 @@ def process_array(curve: np.ndarray, mode: str = 'max', window_size: int = 500) 
     """
     init_peaks = [Peak(peak, len(curve), window_size) for peak in detect_peaks(curve)]
     accepted_peaks = filter_peaks(curve, init_peaks, mode=mode)
-    peaks_to_merge = Peak._get_peaks_to_merge(accepted_peaks)
+    peaks_to_merge = Peak.get_peaks_to_merge(accepted_peaks)
 
     single_peaks = [x for x in accepted_peaks if not any(x in y for y in peaks_to_merge)]
     merged_peaks = [Peak(to_merge[0].get_middle(to_merge[1]),len(curve), window_size) for to_merge in peaks_to_merge]
