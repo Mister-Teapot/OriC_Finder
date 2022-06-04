@@ -44,7 +44,7 @@ def handle_location(location: str) -> list:
     if 'complement' in location:
         handled.append( location.lstrip('complement(').rstrip(')').split('..') )
     elif 'join' in location:
-        locs_list = location.lstrip('complement(').rstrip(')').split(',')
+        locs_list = location.lstrip('join(').rstrip(')').split(',')
         handled.extend( [loc.split('..') for loc in locs_list] )
     elif '<' in location:
         handled.append( location.lstrip('<').split('..') )

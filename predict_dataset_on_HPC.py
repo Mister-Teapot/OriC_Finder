@@ -41,7 +41,6 @@ def prep_prediction(sample_path, csv_path, max_oriCs):
     # OriC processing
     for i in range(max_oriCs):
         row.append(preferred_properties['oriC_middles'][i]) if i < len(preferred_properties['oriC_middles']) else row.append(np.nan)
-    ## v3
     for i in range(max_oriCs):
         row.append(preferred_properties['occurances'][i]) if i < len(preferred_properties['occurances']) else row.append(np.nan)
 
