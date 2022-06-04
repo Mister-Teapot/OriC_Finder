@@ -19,9 +19,9 @@ def calc_disparities(seq: str) -> tuple:
     """
     Z-curve, GC-skew, and N-count calculation. In one function so only one iteration of the sequence is necessary.\n
     Input:
-        ``seq`` : string DNA sequence\n
+        `seq` : string DNA sequence\n
     Return:
-        ``x``, ``y``, ``z``, ``gc`` : 1D-np.arrays of the three Z-curve components and 1D-np.array of the GC-skew
+        `x`, `y`, `z`, `gc` : 1D-np.arrays of the three Z-curve components and 1D-np.array of the GC-skew
     """
     x, y, z, gc = [], [], [], []
     a, c, t, g = 0, 0, 0, 0
@@ -58,11 +58,11 @@ def filter_peaks(curve: np.ndarray, peaks: list, mode: str = 'max') -> list:
     - Filter 1: Check if any windows intersect the window of another peak (circular DNA).
     - Filter 2: Check if peaks are actually the extreme in their windows.\n
     Input:
-    - ``curve``          : 1D-np.array
-    - ``peaks``          : list of Peaks of curve
-    - ``mode``           : 'max'|'min'. Which type of extreme do you want to find?\n
+    - `curve`          : 1D-np.array
+    - `peaks`          : list of Peaks of curve
+    - `mode`           : 'max'|'min'. Which type of extreme do you want to find?\n
     Return:
-    - ``accepted_peaks`` : peaks that passed both filters
+    - `accepted_peaks` : peaks that passed both filters
     """
     rejected_peaks = []
     for peak_i, peak_j in combinations(peaks, 2):
@@ -225,20 +225,20 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, use_gene_info:
     VERSION 4\n
     Locates potential oriC based on Z-curve and GC-skew analysis.
     Three window_sizes are used: 1, 3 and 5 % of the total genome length. The oriCs that were found by most combinations, get used.
-    If ``use_gene_info``, then the location of the DnaA and DnaN genes will be considered in the ranking of the found oriCs. The oriC closest to the genes gets promoted.
+    If `use_gene_info`, then the location of the DnaA and DnaN genes will be considered in the ranking of the found oriCs. The oriC closest to the genes gets promoted.
 
     This function either reads a given FASTA file or fetches a FASTA of a given accession directly from the NCBI database.
 
     Parameters:
-    - ``genome_fasta``  : FASTA-file with circular bacterial DNA
-    - ``genes_fasta``   : FASTA-file with gene info in the same format as when acquired using ``E-Utils(db='nuccore', rettype='fasta_cds_na')``
-    - ``use_gene_info`` : T|F whether to use gene_info for oriC determination. Ignored if genes_fasta is provided.
-    - ``accession``     : Accession number of the sequence to fetch
-    - ``email``         : Email adress of your NCBI account
-    - ``api_key``       : API Key for downloading from the NCBI database (E-Utils). Optional, but recommended if fetching multiple sequences.
+    - `genome_fasta`  : FASTA-file with circular bacterial DNA
+    - `genes_fasta`   : FASTA-file with gene info in the same format as when acquired using `E-Utils(db='nuccore', rettype='fasta_cds_na')`
+    - `use_gene_info` : T|F whether to use gene_info for oriC determination. Ignored if genes_fasta is provided.
+    - `accession`     : Accession number of the sequence to fetch
+    - `email`         : Email adress of your NCBI account
+    - `api_key`       : API Key for downloading from the NCBI database (E-Utils). Optional, but recommended if fetching multiple sequences.
 
     Return:
-    - ``properties`` : Dictionary with oriC properties
+    - `properties` : Dictionary with oriC properties
     '''
     # NOTE: Potential further improvements:
     #   - AT% measure of oriC: should be characteristically higher than the rest of the genome.
@@ -289,6 +289,10 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, use_gene_info:
         if len(genes_dict.keys()) != 0:
             # Check oriC closest to genes of interest
             gene_locations = parsers.extract_locations(len(sequence), genes_dict)
+            # DEBUG PRINT REMOVE LATER
+            if gene_locations is None:
+                print(_accession, 'went wrong. Check dnaA or dnaN location')
+                return None
             matrix_oriCs_genes = get_adj_mat(oriCs, gene_locations)
 
             # Rearange oriCs based on gen location information

@@ -50,6 +50,9 @@ def handle_location(location: str) -> list:
         handled.append( location.lstrip('<').split('..') )
     else:
         handled.append( location.split('..') )
+    # DEBUG REMOVE LATER
+    if len(handled) < 2:
+        return None
     return [[int(loc[0]), int(loc[1])] for loc in handled]
 
 
@@ -58,5 +61,8 @@ def extract_locations(seq_len: int, genes_dict: dict) -> list:
     locations = []
     for gene_dict in genes_dict.values():
         locations.extend(handle_location(gene_dict['location']))
+    # DEBUG REMOVE LATER
+    if None in locations:
+        return None
     middles = [Peak(Peak.get_middle(loc[0], loc[1], seq_len), seq_len, 0) for loc in locations]
     return middles
