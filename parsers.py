@@ -39,7 +39,7 @@ def read_gene_info(handle: TextIO , genes_list: list) -> dict:
 
 
 def handle_location(location: str) -> list:
-    '''Gene locations come in four flavours, each has to be handled differently.'''
+    '''Gene locations come in five flavours, each has to be handled differently.'''
     handled = []
     if 'complement' in location:
         handled.append( location.lstrip('complement(').rstrip(')').split('..') )
@@ -50,11 +50,10 @@ def handle_location(location: str) -> list:
         handled.append( location.lstrip('<').split('..') )
     else:
         handled.append( location.split('..') )
-    # DEBUG REMOVE LATER
-    for loc in handled:
-        if len(loc) < 2:
-            print(loc)
-            return None
+    # Or it is not a range separated by .. at all, but simple a number
+    for i in range(len(handled)):
+        if len(handled[i]) < 2:
+            handled[i] = [handled[i][0], handled[i][0]]
     return [[int(loc[0]), int(loc[1])] for loc in handled]
 
 
@@ -62,10 +61,6 @@ def extract_locations(seq_len: int, genes_dict: dict) -> list:
     '''Returns Peaks of the middle position of every gene in the dictionary.'''
     locations = []
     for gene_dict in genes_dict.values():
-        to_add = handle_location(gene_dict['location'])
-        # DEBUG REMOVE LATER
-        if to_add is None:
-            return None
-        locations.extend(to_add)
+        locations.extend(handle_location(gene_dict['location']))
     middles = [Peak(Peak.get_middle(loc[0], loc[1], seq_len), seq_len, 0) for loc in locations]
     return middles
