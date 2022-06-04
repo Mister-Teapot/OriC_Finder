@@ -22,11 +22,16 @@ These scripts prepare the NCBI data for analysis. Each script has docs-strings f
 Once both the DoriC and NCBI datasets have been processed, they can be compared. This is done with `oriC_comparison.py`.
 
 ### `oriC_Finder.py`
-This script predicts the origin of replication for circular bacterial DNA. It makes use of a combination of Z-curve and GC-skew analysis.
-- https://en.wikipedia.org/wiki/Z_curve
+This script predicts the origin of replication for circular bacterial DNA. It makes use of a combination of [Z-curve](https://en.wikipedia.org/wiki/Z_curve) and [GC-skew](https://en.wikipedia.org/wiki/GC_skew) analysis. You can load the required FASTA files yourself, or simply provide an accession and NCBI-account email and the `find_ori` function will fetch them.
+
+**Required packages:**
+- [SciPy](https://scipy.org/)
+- [Pandas](https://pandas.pydata.org/)
+- [NumPy](https://numpy.org/)
+- [Biopython](https://biopython.org/)
 
 ### `Plotting_functions.py`
-There are 3 general functions in this file which can be used to plot any generic 1D-np.array.
+There are 3 general functions in this file which can be used to plot any generic 1D-np.array. To use these functions, make sure to have [matplotlib](https://matplotlib.org/) installed
 - `plot_Z_curve_3D`: Makes a 3D-plot of the Z-curve.
 - `plot_Z_curve_2D`: Can plot a maximum of four axes in a single 2D-plot. This one is useful for plotting single or multiple Z-curve or GC-skew component agaist each other.
 - `plot_GC_skew`: Does the same as `plot_Z_curve_2D`, except only takes one array.
