@@ -51,8 +51,10 @@ def handle_location(location: str) -> list:
     else:
         handled.append( location.split('..') )
     # DEBUG REMOVE LATER
-    if len(handled) < 2:
-        return None
+    for loc in handled:
+        if len(loc) < 2:
+            print(loc)
+            return None
     return [[int(loc[0]), int(loc[1])] for loc in handled]
 
 
