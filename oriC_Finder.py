@@ -259,20 +259,6 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, use_gene_info:
     seq_handle = parsers.fetch_file(accession, email, api_key, 'fasta') if genome_fasta is None else genome_fasta
     _accession, sequence = parsers.read_FASTA(seq_handle)
 
-    if use_gene_info:
-        # Gene info fetching and reading
-        gene_handle = parsers.fetch_file(_accession, email, api_key, 'fasta_cds_na') if genes_fasta is None else genes_fasta
-        genes_of_interest = ['dnaA', 'dnaN'] # 'gidA', 'parA', 'hemE' # not sure if these are proper yet
-        genes_dict = parsers.read_gene_info(gene_handle, genes_of_interest)
-        del gene_handle
-
-        if len(genes_dict.keys()) != 0:
-            # Check oriC closest to genes of interest
-            gene_locations = parsers.extract_locations(len(sequence), genes_dict)
-            if gene_locations is None:
-                return None
-
-
     # Analysing sequence properties
     x, y, z, gc = calc_disparities(sequence)
 
@@ -293,11 +279,22 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, use_gene_info:
     # Merge potential oriCs based on their groups
     oriCs, occurances = merge_oriCs(len(sequence), connected_groups, window_size=int(len(sequence)*windows[-1]))
 
-    
-    if use_gene_info and len(genes_dict.keys()) != 0:
-        matrix_oriCs_genes = get_adj_mat(oriCs, gene_locations)
-        # Rearange oriCs based on gen location information
-        oriCs, occurances = process_gene_loc_info(oriCs, occurances, matrix_oriCs_genes)
+    if use_gene_info:
+        # Gene info fetching and reading
+        gene_handle = parsers.fetch_file(_accession, email, api_key, 'fasta_cds_na') if genes_fasta is None else genes_fasta
+        genes_of_interest = ['dnaA', 'dnaN'] # 'gidA', 'parA', 'hemE' # not sure if these are proper yet
+        genes_dict = parsers.read_gene_info(gene_handle, genes_of_interest)
+        print(genes_dict)
+        del gene_handle
+
+        if len(genes_dict.keys()) != 0:
+            # Check oriC closest to genes of interest
+            gene_locations = parsers.extract_locations(len(sequence), genes_dict)
+            if gene_locations is None:
+                return None
+            matrix_oriCs_genes = get_adj_mat(oriCs, gene_locations)
+            # Rearange oriCs based on gen location information
+            oriCs, occurances = process_gene_loc_info(oriCs, occurances, matrix_oriCs_genes)
 
     # Check false order
     false_order = any( get_false_order( sequence, i[0], oriCs, mode=i[1]) for i in ((x, 'min'), (y, 'max'), (gc, 'min')) )    
@@ -327,12 +324,12 @@ if __name__ == '__main__':
         'NC_007604', 'NC_000962', 'NC_002696', 'NC_002971', 'NC_005363', 'NC_008255', 'NC_009850', 'NC_010546', 'NC_010547', 'NC_011916'
     ]
 
-    with open('not_predicted.txt') as fh:
+    with open('bad_fastas.txt') as fh:
         not_predicted = fh.read().split('\n')
 
     # For testing a small folder
     for fasta in not_predicted:
-        properties = find_oriCs(accession=fasta, email=email)
+        properties = find_oriCs(accession=fasta, email=email, api_key=api_key)
 
         name    = properties['name']
         Z_curve = properties['z_curve']
@@ -343,7 +340,7 @@ if __name__ == '__main__':
         print('oriCs:', properties['oriC_middles'], '\n')
 
 
-        # pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
+        pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
         # pf.plot_skew(GC_skew, [preferred_properties['oriC_middles']], name)
         # pf.plot_Z_curve_3D(Z_curve, name)
 

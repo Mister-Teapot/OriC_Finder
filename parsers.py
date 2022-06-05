@@ -39,42 +39,36 @@ def read_gene_info(handle: TextIO , genes_list: list) -> dict:
 
 
 def handle_location(location: str) -> list:
-    '''Gene locations come in six flavours, each has to be handled differently.'''
+    '''Gene locations come in a billion flavours due to inconsistent annotation This function handles >95 % of cases.'''
     handled = []
-    if 'complement' in location:
-        handled.append( location.lstrip('complement(').rstrip(')').split('..') )
-    elif 'join' in location:
-        locs_list = location.lstrip('join(').rstrip(')').split(',')
-        handled.extend( [loc.split('..') for loc in locs_list] )
-    elif '<' in location or '>' in location:
-        a, b = location[1:].split('..')
-        b = b.strip('>')
-        b = b.strip('<')
-        handled.append( [a, b] )
-    else:
-        handled.append( location.split('..') )
-    # Or it is not a range separated by '..' at all, but is simply a single number
-    for i in range(len(handled)):
-        if len(handled[i]) < 2:
-            handled[i] = [handled[i][0], handled[i][0]]
-    to_use = []
-    for i in range(len(handled)):
-        try:
-            int(handled[i][0])
-            int(handled[i][1])
-            to_use.append([int(handled[i][0]), int(handled[i][1])])
-        except ValueError:
-            return None
-    return to_use
+    # Special situation: gene runs from x to seq_len -> 0 to y (split: annotated as 'complement(join(y..z,a..b))') # will fix later, gets read as separate copy of gene now
+    # In case the gene has multiple locations:
+    raw_entries = re.split(',\s?', location) # dont even trust them to comma-separate without spaces
+    for entry in raw_entries:
+        raw_loc = re.search(r'[0-9]+(\.\.[<>]?[0-9]*)?', entry).group() # SHOULD only be one group
+        loc_coords = re.split(r'\.\.[<>]?', raw_loc)
+        if len(loc_coords) == 1:
+            loc_coords.append(loc_coords[0])
+        elif len(loc_coords) == 0:
+            print('Something went horribly wrong. Gene has been very weirdly annotated or gene did not get a location\n', location)
+        # ONE MORE safety check for any non-numerical characters in the location
+        for i in range(len(loc_coords)):
+            loc_coords[i] = re.search(r'[0-9]+', loc_coords[i]).group() # should DEFINITELY be only one group
+        handled.append(loc_coords)
+    try:
+        to_return = [[int(loc[0]), int(loc[1])] for loc in handled]
+    except: # If this becomes something other than `return None`, then implement separate KeyboardInterrupt
+        return None
+    return to_return
 
 
 def extract_locations(seq_len: int, genes_dict: dict) -> list:
     '''Returns Peaks of the middle position of every gene in the dictionary.'''
     locations = []
     for gene_dict in genes_dict.values():
-        to_use = handle_location(gene_dict['location'])
-        if to_use is None:
+        clean_locs = handle_location(gene_dict['location'])
+        if clean_locs is None:
             return None
-        locations.extend(to_use)
+        locations.extend(clean_locs)
     middles = [Peak(Peak.get_middle(loc[0], loc[1], seq_len), seq_len, 0) for loc in locations]
     return middles
