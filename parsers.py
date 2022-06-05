@@ -57,7 +57,15 @@ def handle_location(location: str) -> list:
     for i in range(len(handled)):
         if len(handled[i]) < 2:
             handled[i] = [handled[i][0], handled[i][0]]
-    return [[int(loc[0]), int(loc[1])] for loc in handled]
+    to_use = []
+    for i in range(len(handled)):
+        try:
+            int(handled[i][0])
+            int(handled[i][1])
+            to_use.append([int(handled[i][0]), int(handled[i][1])])
+        except ValueError:
+            pass
+    return to_use
 
 
 def extract_locations(seq_len: int, genes_dict: dict) -> list:
