@@ -64,7 +64,7 @@ def handle_location(location: str) -> list:
             int(handled[i][1])
             to_use.append([int(handled[i][0]), int(handled[i][1])])
         except ValueError:
-            pass
+            return None
     return to_use
 
 
@@ -72,6 +72,9 @@ def extract_locations(seq_len: int, genes_dict: dict) -> list:
     '''Returns Peaks of the middle position of every gene in the dictionary.'''
     locations = []
     for gene_dict in genes_dict.values():
-        locations.extend(handle_location(gene_dict['location']))
+        to_use = handle_location(gene_dict['location'])
+        if to_use is None:
+            return None
+        locations.extend(to_use)
     middles = [Peak(Peak.get_middle(loc[0], loc[1], seq_len), seq_len, 0) for loc in locations]
     return middles

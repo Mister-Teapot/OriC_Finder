@@ -259,6 +259,21 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, use_gene_info:
     seq_handle = parsers.fetch_file(accession, email, api_key, 'fasta') if genome_fasta is None else genome_fasta
     _accession, sequence = parsers.read_FASTA(seq_handle)
 
+    if use_gene_info:
+        # Gene info fetching and reading
+        gene_handle = parsers.fetch_file(_accession, email, api_key, 'fasta_cds_na') if genes_fasta is None else genes_fasta
+        genes_of_interest = ['dnaA', 'dnaN'] # 'gidA', 'parA', 'hemE' # not sure if these are proper yet
+        genes_dict = parsers.read_gene_info(gene_handle, genes_of_interest)
+        del gene_handle
+
+        if len(genes_dict.keys()) != 0:
+            # Check oriC closest to genes of interest
+            gene_locations = parsers.extract_locations(len(sequence), genes_dict)
+            if gene_locations is None:
+                return None
+            matrix_oriCs_genes = get_adj_mat(oriCs, gene_locations)
+
+
     # Analysing sequence properties
     x, y, z, gc = calc_disparities(sequence)
 
@@ -279,20 +294,10 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, use_gene_info:
     # Merge potential oriCs based on their groups
     oriCs, occurances = merge_oriCs(len(sequence), connected_groups, window_size=int(len(sequence)*windows[-1]))
 
-    if use_gene_info:
-        # Gene info fetching and reading
-        gene_handle = parsers.fetch_file(_accession, email, api_key, 'fasta_cds_na') if genes_fasta is None else genes_fasta
-        genes_of_interest = ['dnaA', 'dnaN'] # 'gidA', 'parA', 'hemE' # not sure if these are proper yet
-        genes_dict = parsers.read_gene_info(gene_handle, genes_of_interest)
-        del gene_handle
-
-        if len(genes_dict.keys()) != 0:
-            # Check oriC closest to genes of interest
-            gene_locations = parsers.extract_locations(len(sequence), genes_dict)
-            matrix_oriCs_genes = get_adj_mat(oriCs, gene_locations)
-
-            # Rearange oriCs based on gen location information
-            oriCs, occurances = process_gene_loc_info(oriCs, occurances, matrix_oriCs_genes)
+    
+    if use_gene_info and len(genes_dict.keys()) != 0:
+        # Rearange oriCs based on gen location information
+        oriCs, occurances = process_gene_loc_info(oriCs, occurances, matrix_oriCs_genes)
 
     # Check false order
     false_order = any( get_false_order( sequence, i[0], oriCs, mode=i[1]) for i in ((x, 'min'), (y, 'max'), (gc, 'min')) )    
