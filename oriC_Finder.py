@@ -338,7 +338,7 @@ if __name__ == '__main__':
         print('oriCs:', properties['oriC_middles'], '\n')
 
 
-        pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
+        # pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
         # pf.plot_skew(GC_skew, [preferred_properties['oriC_middles']], name)
         # pf.plot_Z_curve_3D(Z_curve, name)
 

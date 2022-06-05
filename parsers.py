@@ -39,18 +39,18 @@ def read_gene_info(handle: TextIO , genes_list: list) -> dict:
 
 
 def handle_location(location: str) -> list:
-    '''Gene locations come in five flavours, each has to be handled differently.'''
+    '''Gene locations come in six flavours, each has to be handled differently.'''
     handled = []
     if 'complement' in location:
         handled.append( location.lstrip('complement(').rstrip(')').split('..') )
     elif 'join' in location:
         locs_list = location.lstrip('join(').rstrip(')').split(',')
         handled.extend( [loc.split('..') for loc in locs_list] )
-    elif '<' in location:
-        handled.append( location.lstrip('<').split('..') )
+    elif '<' in location or '>' in location:
+        handled.append( location[1:].split('..') )
     else:
         handled.append( location.split('..') )
-    # Or it is not a range separated by .. at all, but simple a number
+    # Or it is not a range separated by '..' at all, but is simply a single number
     for i in range(len(handled)):
         if len(handled[i]) < 2:
             handled[i] = [handled[i][0], handled[i][0]]
