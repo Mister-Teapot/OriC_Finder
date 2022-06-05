@@ -47,7 +47,11 @@ def handle_location(location: str) -> list:
         locs_list = location.lstrip('join(').rstrip(')').split(',')
         handled.extend( [loc.split('..') for loc in locs_list] )
     elif '<' in location or '>' in location:
-        handled.append( location[1:].split('..') )
+        a, b = location[1:].split('..')
+        b = b.strip('>')
+        b = b.strip('<')
+        handled.append( a )
+        handled.append( b )
     else:
         handled.append( location.split('..') )
     # Or it is not a range separated by '..' at all, but is simply a single number
