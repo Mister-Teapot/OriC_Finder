@@ -271,7 +271,6 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, use_gene_info:
             gene_locations = parsers.extract_locations(len(sequence), genes_dict)
             if gene_locations is None:
                 return None
-            matrix_oriCs_genes = get_adj_mat(oriCs, gene_locations)
 
 
     # Analysing sequence properties
@@ -296,6 +295,7 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, use_gene_info:
 
     
     if use_gene_info and len(genes_dict.keys()) != 0:
+        matrix_oriCs_genes = get_adj_mat(oriCs, gene_locations)
         # Rearange oriCs based on gen location information
         oriCs, occurances = process_gene_loc_info(oriCs, occurances, matrix_oriCs_genes)
 
