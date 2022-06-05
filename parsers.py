@@ -50,8 +50,7 @@ def handle_location(location: str) -> list:
         a, b = location[1:].split('..')
         b = b.strip('>')
         b = b.strip('<')
-        handled.append( a )
-        handled.append( b )
+        handled.append( [a, b] )
     else:
         handled.append( location.split('..') )
     # Or it is not a range separated by '..' at all, but is simply a single number
