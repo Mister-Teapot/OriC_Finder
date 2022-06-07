@@ -58,7 +58,7 @@ def plot_skew(skewArray, peaks, name):
 
 
 def distance_histogram(db, log=False):
-    plt.hist(db['Distance'], bins=[x for x in range(db['Distance'].min(), db['Distance'].max()+100000, 100000)], log=log)
+    plt.hist(db['Distance_bp'], bins=[x for x in range(0, 3600000//2, 1000)], log=log) # 3.6e6 = avg. len of bacterial chromosome
     plt.show()
-    plt.hist(db['Distance'], bins=[x for x in range(-200000, 200000, 1000)], log=log)
+    plt.hist(db['Distance_pc'], bins=[x for x in range(0, 50, 1)], log=log)
     plt.show()

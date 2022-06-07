@@ -284,7 +284,6 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, use_gene_info:
         gene_handle = parsers.fetch_file(_accession, email, api_key, 'fasta_cds_na') if genes_fasta is None else genes_fasta
         genes_of_interest = ['dnaA', 'dnaN'] # 'gidA', 'parA', 'hemE' # not sure if these are proper yet
         genes_dict = parsers.read_gene_info(gene_handle, genes_of_interest)
-        print(genes_dict)
         del gene_handle
 
         if len(genes_dict.keys()) != 0:
