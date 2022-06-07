@@ -323,36 +323,36 @@ if __name__ == '__main__':
         'NC_007604', 'NC_000962', 'NC_002696', 'NC_002971', 'NC_005363', 'NC_008255', 'NC_009850', 'NC_010546', 'NC_010547', 'NC_011916'
     ]
 
-    with open('bad_fastas.txt') as fh:
-        not_predicted = fh.read().split('\n')
+    # with open('bad_fastas.txt') as fh:
+    #     not_predicted = fh.read().split('\n')
 
-    # For testing a small folder
-    for fasta in not_predicted:
-        properties = find_oriCs(accession=fasta, email=email, api_key=api_key)
+    # # For testing a small folder
+    # for fasta in not_predicted:
+    #     properties = find_oriCs(accession=fasta, email=email, api_key=api_key)
 
-        name    = properties['name']
-        Z_curve = properties['z_curve']
-        GC_skew = properties['gc_skew']
+    #     name    = properties['name']
+    #     Z_curve = properties['z_curve']
+    #     GC_skew = properties['gc_skew']
 
-        print(name)
-        print('QoP  :', properties['occurances'], properties['false_order'])
-        print('oriCs:', properties['oriC_middles'], '\n')
+    #     print(name)
+    #     print('QoP  :', properties['occurances'], properties['false_order'])
+    #     print('oriCs:', properties['oriC_middles'], '\n')
 
 
-        pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
-        # pf.plot_skew(GC_skew, [preferred_properties['oriC_middles']], name)
-        # pf.plot_Z_curve_3D(Z_curve, name)
+    #     pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
+    #     # pf.plot_skew(GC_skew, [preferred_properties['oriC_middles']], name)
+    #     # pf.plot_Z_curve_3D(Z_curve, name)
 
     # For Testing single files
-    # properties = find_oriCs(accession='NC_017301', email=email, api_key=api_key)
-    # name    = properties['name']
-    # Z_curve = properties['z_curve']
-    # GC_skew = properties['gc_skew']
+    properties = find_oriCs(accession='NC_017301', email=email, api_key=api_key)
+    name    = properties['name']
+    Z_curve = properties['z_curve']
+    GC_skew = properties['gc_skew']
 
-    # print(name)
-    # print('QoP  :', properties['occurances'], properties['false_order'])
-    # print('oriCs:', properties['oriC_middles'])
+    print(name)
+    print('QoP  :', properties['occurances'], properties['false_order'])
+    print('oriCs:', properties['oriC_middles'])
 
-    # pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
-    # # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
-    # # pf.plot_Z_curve_3D(Z_curve, name)
+    pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
+    pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
+    pf.plot_Z_curve_3D(Z_curve, name)
