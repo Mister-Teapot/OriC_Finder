@@ -8,7 +8,7 @@ from typing import Union
 
 # Self-made modules
 from peak import Peak
-import parsers
+import functions as fc
 import plotting_functions as pf
 
 # Set cwd to location of this script
@@ -150,46 +150,6 @@ def curve_combinations(curves_list: Union[list, tuple], peaks_list: Union[list, 
     return oriC_locations_list
 
 
-def get_adj_mat(peaks_a: list, peaks_b: list = None) -> np.ndarray:
-    '''Gets adjacency matrix for given peaks'''
-    if peaks_b is None:
-        adj_mat = np.zeros((len(peaks_a), len(peaks_a)))
-        iterator = combinations(enumerate(peaks_a), r=2)
-    else:
-        adj_mat = np.zeros((len(peaks_a), len(peaks_b)))
-        iterator = product(enumerate(peaks_a), enumerate(peaks_b))
-    for (i_a, a), (i_b, b) in iterator:
-        dist = Peak.calc_dist(a.middle, b.middle, a.seq_len)
-        adj_mat[i_a, i_b] = dist
-        if peaks_b is None:
-            adj_mat[i_b, i_a] = dist
-    return adj_mat
-
-
-def get_connected_groups(peaks: list, adj_mat: np.ndarray, threshold: int) -> list:
-    '''Recursively find connected groups in an undirected graph'''
-    visited = [False] * len(peaks)
-    connected_groups_idx = []
-    for i in range(len(peaks)):
-        if not visited[i]:
-            group = []
-            _, _, visited, group, _ = __DFS_recurse(i, adj_mat, visited, group, threshold=threshold)
-            connected_groups_idx.append(group)
-    connected_groups_vals = [ [peaks[i] for i in idx_group] for idx_group in connected_groups_idx ]
-    return connected_groups_vals
-
-
-def __DFS_recurse(idx, adj_mat, visited, connected_list, threshold):
-    visited[idx] = True
-    connected_list.append(idx)
-    for i in range(len(visited)):
-        if i == idx:
-            continue
-        elif adj_mat[i][idx] <= threshold and not visited[i]:
-            _, _, visited, connected_list, _ = __DFS_recurse(i, adj_mat,visited, connected_list, threshold)
-    return idx, adj_mat, visited, connected_list, threshold
-
-
 def merge_oriCs(curve_size: int, groups: list, window_size: int = 500) -> tuple:
     '''Finds the average index of a group and returns those values. groups is a nested-list'''
     mutable = sorted( groups, key=lambda x:len(x), reverse=True )
@@ -216,7 +176,7 @@ def process_gene_loc_info(current_oriCs, current_occurances, matrix):
 
     new_oriCs = [current_oriCs[best_idx]] + current_oriCs[:best_idx] + current_oriCs[best_idx+1:]
     new_occurances = [current_occurances[best_idx]] + current_occurances[:best_idx] + current_occurances[best_idx+1:]
-    new_occurances[0] = 0.5 + new_occurances[0] if new_occurances[0] <= 0.5 else 1
+    # new_occurances[0] = 0.5 + new_occurances[0] if new_occurances[0] <= 0.5 else 1
     return new_oriCs, new_occurances
 
 
@@ -235,7 +195,7 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, use_gene_info:
     - `use_gene_info` : T|F whether to use gene_info for oriC determination. Ignored if genes_fasta is provided.
     - `accession`     : Accession number of the sequence to fetch
     - `email`         : Email adress of your NCBI account
-    - `api_key`       : API Key for downloading from the NCBI database (E-Utils). Optional, but recommended if fetching multiple sequences.
+    - `api_key`       : API Key for downloading from the NCBI database (E-Utils). Optional (as of 2022/06/08), but recommended if fetching multiple sequences.
 
     Return:
     - `properties` : Dictionary with oriC properties
@@ -256,8 +216,8 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, use_gene_info:
         warnings.warn('Provided both a fasta to read and an accession to fetch. Will ignore accession and use accession from fasta.')
 
     # Sequence fetching and reading
-    seq_handle = parsers.fetch_file(accession, email, api_key, 'fasta') if genome_fasta is None else genome_fasta
-    _accession, sequence = parsers.read_FASTA(seq_handle)
+    seq_handle = fc.fetch_file(accession, email, api_key, 'fasta') if genome_fasta is None else genome_fasta
+    _accession, sequence = fc.read_FASTA(seq_handle)
 
     # Analysing sequence properties
     x, y, z, gc = calc_disparities(sequence)
@@ -273,25 +233,25 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, use_gene_info:
         peaks.extend( [j for i in curve_combinations( (x, y, gc), (peaks_x, peaks_y, peaks_gc) ) for j in i] )
 
     # Finding connected components in undirected graph with a depth-first search
-    matrix_pot_oriCs = get_adj_mat(peaks)
-    connected_groups = get_connected_groups(peaks, matrix_pot_oriCs, int(len(sequence)*windows[-1]))
+    matrix_pot_oriCs = fc.get_adj_mat(peaks)
+    connected_groups = fc.get_connected_groups(peaks, matrix_pot_oriCs, int(len(sequence)*windows[-1]))
 
     # Merge potential oriCs based on their groups
     oriCs, occurances = merge_oriCs(len(sequence), connected_groups, window_size=int(len(sequence)*windows[-1]))
 
     if use_gene_info:
         # Gene info fetching and reading
-        gene_handle = parsers.fetch_file(_accession, email, api_key, 'fasta_cds_na') if genes_fasta is None else genes_fasta
+        gene_handle = fc.fetch_file(_accession, email, api_key, 'fasta_cds_na') if genes_fasta is None else genes_fasta
         genes_of_interest = ['dnaA', 'dnaN'] # 'gidA', 'parA', 'hemE' # not sure if these are proper yet
-        genes_dict = parsers.read_gene_info(gene_handle, genes_of_interest)
+        genes_dict = fc.read_gene_info(gene_handle, genes_of_interest)
         del gene_handle
 
         if len(genes_dict.keys()) != 0:
             # Check oriC closest to genes of interest
-            gene_locations = parsers.extract_locations(len(sequence), genes_dict)
+            gene_locations = fc.extract_locations(len(sequence), genes_dict)
             if gene_locations is None:
                 return None
-            matrix_oriCs_genes = get_adj_mat(oriCs, gene_locations)
+            matrix_oriCs_genes = fc.get_adj_mat(oriCs, gene_locations)
             # Rearange oriCs based on gen location information
             oriCs, occurances = process_gene_loc_info(oriCs, occurances, matrix_oriCs_genes)
 
@@ -354,5 +314,5 @@ if __name__ == '__main__':
     print('oriCs:', properties['oriC_middles'])
 
     pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
-    pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
-    pf.plot_Z_curve_3D(Z_curve, name)
+    # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
+    # pf.plot_Z_curve_3D(Z_curve, name)

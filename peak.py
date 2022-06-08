@@ -1,5 +1,5 @@
 from typing import Union
-from itertools import combinations, product
+from itertools import combinations
 
 class Peak():
     def __init__(self, middle: int, seq_len: int, window_size: int):
@@ -37,9 +37,9 @@ class Peak():
         """
         Get the indeces that give the same value in the curve and are in eachothers window.
         Input:
-        - ``peaks``          : list of ``Peaks`` of a curve
+        - `peaks`          : list of `Peaks` of a curve
         Return:
-        - ``peaks_to_merge`` : Nested list. Each sublist contains the two Peaks that have to be merged
+        - `peaks_to_merge` : Nested list. Each sublist contains the two Peaks that have to be merged
         """
         peaks_to_merge = []
         for peak_i, peak_j in combinations(peaks, 2):
