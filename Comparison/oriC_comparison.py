@@ -50,7 +50,7 @@ def make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv):
     return comparator_df
 
 
-def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_dist=30000, alt_oriC=None, use_confidence=None):
+def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_dist=30000, alt_oriC=None, use_confidence=None, exclude_False_order=False):
     '''
     Compares results. Results can be loaded from a pandas.DataFrame OR csv.
     info       : If str, writes a text_file to the given location with some info on the analysis.
@@ -83,7 +83,7 @@ def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_di
     total_Z_oriC = 0
     total_D_by_Z = 0
     total_Z_that_found_a_D = 0
-    organisms = 0
+    recall = 0
 
     for i, sample_original in df.iterrows():
         sample = sample_original.copy()
@@ -101,16 +101,17 @@ def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_di
         elif len(D_oriC_cols) < len(Z_oriC_cols):
             num_of_predictions[1] += 1
 
-        # If multiple Z_oriC match with the same DoriC_oriC : handle later + check vice versa too.
         D_oriC_middles = [ Peak.get_middle( int( literal_eval(sample[D_oriC_col])[0] ), int( literal_eval(sample[D_oriC_col])[1] ), seq_len ) for D_oriC_col in D_oriC_cols ]
         if use_confidence is not None:
             Z_oriC_middles = [ int(sample[Z_oriC_cols[i]]) for i in range(len(Z_oriC_cols)) if sample[f'Occurance_oriC_{i}'] >= use_confidence]
         else:
             Z_oriC_middles = [ int(sample[Z_oriC_cols[i]]) for i in range(len(Z_oriC_cols))]
+        if exclude_False_order and sample['False_order']:
+            Z_oriC_middles = []
         total_D_oriC += len(D_oriC_cols)
         total_Z_oriC += len(Z_oriC_middles)
         if len(Z_oriC_middles) > 0:
-            organisms += 1
+            recall += 1
 
         ### Accuracy per point: how many points were properly matched
         window_size = max_dist if max_dist > 1 else int(seq_len * max_dist)
@@ -178,9 +179,8 @@ def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_di
     if print_info:
         print('\n'.join(info_lines))
 
-    # csv_line = f'{use_confidence},{total_D_by_Z/total_D_oriC*100:.2f},{total_Z_that_found_a_D/total_Z_oriC*100:.2f},{ sum(all_distances["Distance"])/len(all_distances["Distance"]) }'
-    # print(csv_line)
-    # print(organisms)
+    csv_line = f'{use_confidence},{total_D_by_Z/total_D_oriC*100:.2f},{total_Z_that_found_a_D/total_Z_oriC*100:.2f},{ sum(all_distances["Distance_bp"])/len(all_distances["Distance_bp"]) },{ sum(all_distances["Distance_pc"])/len(all_distances["Distance_pc"]) },{total_D_oriC},{recall},{df.shape[0]}'
+    print(csv_line)
 
     return pd.DataFrame(all_distances)
 
@@ -194,9 +194,10 @@ if __name__ == '__main__':
     comparator_csv = 'Comparison/'+VERSION+'/in_both_sets_all.csv'
     all_file_path  = 'Comparison/'+VERSION+'/comparison_info_file_all.txt'
     exp_file_path  = 'Comparison/'+VERSION+'/comparison_info_file_experimental.txt'
+    point_six_file_path  = 'Comparison/'+VERSION+'/comparison_info_file_0.6.txt'
 
     # Make or load csv
-    # comparator_df = make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv=comparator_csv)
+    #comparator_df = make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv=comparator_csv)
     comparator_df = pd.read_csv(comparator_csv)
 
     # General info
@@ -210,13 +211,14 @@ if __name__ == '__main__':
     print(f'be set to {disp_dist} of the total genome length rather than a fixed number for all genomes.\n')
 
     # # ALL DATA
-    # v3 = pd.read_csv('Comparison/v3/hist_all_df.csv')['RefSeq']
+    # v3 = pd.read_csv('Comparison/v3/in_both_sets_all.csv')['RefSeq']
     # comparator_df = comparator_df[comparator_df['RefSeq'].isin(v3)]
-    hist_all_df = compare_dbs(df=comparator_df, info_file_path=None, print_info=True, max_dist=MAX_DIST, alt_oriC='oriC_middles_0', use_confidence=0.6)
+    for i in range(11):
+        hist_all_df = compare_dbs(df=comparator_df, info_file_path=None, print_info=False, max_dist=MAX_DIST, alt_oriC='oriC_middles_0', use_confidence=i/10, exclude_False_order=False)
     # hist_all_df.to_csv('Comparison/'+VERSION+'/hist_all_df.csv', index=False)
     # hist_all_df = pd.read_csv('Comparison/'+VERSION+'/hist_all_df.csv')
     # pf.distance_histogram(hist_all_df, log=True)
-    pf.distance_histogram(hist_all_df, log=False)
+    # pf.distance_histogram(hist_all_df, log=False)
 
     # # All the same steps, but only the EXPERIMENTAL DATA
     # exp_refseq = [ # Accessions that have been experimentally verified.
