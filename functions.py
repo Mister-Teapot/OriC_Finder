@@ -2,7 +2,7 @@ import re
 import numpy as np
 
 from itertools import combinations, product
-from Bio import SeqIO, Entrez, SeqRecord
+from Bio import SeqIO, Entrez
 from typing import TextIO, Union
 
 # Self-made module
@@ -16,7 +16,7 @@ def fetch_file(accession: str, email: str, api_key: Union[str, None], rettype: s
     return Entrez.efetch(db="nuccore", id=accession, rettype=rettype, retmode="text")
 
 
-def read_FASTA(handle: TextIO) -> SeqRecord.SeqRecord:
+def read_FASTA(handle: TextIO) -> tuple:
     """Read a file and returns the SeqRecord of only the first entry in the file"""
     Seq_records = SeqIO.parse(handle, 'fasta')
     Seq_obj = next(Seq_records)

@@ -1,4 +1,4 @@
-Confidence,DoriC oriCs found,Z_oriCs that found a DoriC oriC,Distance_bp,Distance_percentage,Total_DoriCs,Total_ZoriCs,Organisms with a ZoriC
+Confidence,DoriC oriCs found,Z_oriCs correct,Distance_bp,Distance_pc,Total_DoriCs,Total_ZoriCs,accession_with_a_ZoriC,Total_accessions
 0,91.59,40.66,43679,1.22,1640,2939,1322
 10,90.79,44.46,49773,1.36,1640,2661,1322
 20,88.17,56.94,79446,2.19,1640,2011,1312

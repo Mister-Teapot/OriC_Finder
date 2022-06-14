@@ -2,55 +2,55 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 summary_both = pd.read_csv('Comparison/v3/Summary.csv')
-summary_only = pd.read_csv('Comparison/v3/Summary_only_false_orders.csv')
-summary_none = pd.read_csv('Comparison/v3/Summary_no_false_order.csv')
+# summary_only = pd.read_csv('Comparison/v3/Summary_only_false_orders.csv')
+# summary_none = pd.read_csv('Comparison/v3/Summary_no_false_order.csv')
 
 names = ['DoriCs found (%)', 'Correct ZoriCs (%)', 'Distance off (%)', 'Distance off (bp)', '# Organisms for which at least one ZoriC was found']
 x = summary_both['Confidence']
 
-y_1 = summary_both['DoriC oriCs found'], summary_both['Z_oriCs that found a DoriC oriC'], summary_both['Distance_percentage'], summary_both['Distance_bp'], summary_both['Organisms with a ZoriC']
-y_2 = summary_none['DoriC oriCs found'], summary_none['Z_oriCs that found a DoriC oriC'], summary_none['Distance_percentage'], summary_none['Distance_bp'], summary_none['Organisms with a ZoriC']
-y_3 = summary_only['DoriC oriCs found'], summary_only['Z_oriCs that found a DoriC oriC'], summary_only['Distance_percentage'], summary_only['Distance_bp'], summary_only['Organisms with a ZoriC']
+y_1 = summary_both['DoriC oriCs found'], summary_both['Z_oriCs correct'], summary_both['Distance_pc'], summary_both['Distance_bp'], summary_both['accession_with_a_ZoriC']
+# y_2 = summary_none['DoriC oriCs found'], summary_none['Z_oriCs that found a DoriC oriC'], summary_none['Distance_percentage'], summary_none['Distance_bp'], summary_none['Organisms with a ZoriC']
+# y_3 = summary_only['DoriC oriCs found'], summary_only['Z_oriCs that found a DoriC oriC'], summary_only['Distance_percentage'], summary_only['Distance_bp'], summary_only['Organisms with a ZoriC']
 
 fig, ax = plt.subplots()
-fig.subplots_adjust(right=0.88)
+fig.subplots_adjust(right=0.75)
 
-p1_1, = ax.plot(x, y_1[2], "g-", label='All Samples')
-p1_2, = ax.plot(x, y_2[2], "g--", label='No False order')
-p1_3, = ax.plot(x, y_3[2], "g-.", label='Only False order')
+p1_1, = ax.plot(x, y_1[0], "b-", label='All Samples')
+# p1_2, = ax.plot(x, y_2[2], "g--", label='No False order')
+# p1_3, = ax.plot(x, y_3[2], "g-.", label='Only False order')
 
-# twin1 = ax.twinx()
-# p2_1, = twin1.plot(x, y_1[1], "r-", label='All Samples')
+twin1 = ax.twinx()
+p2_1, = twin1.plot(x, y_1[1], "r-", label='All Samples')
 # p2_2, = twin1.plot(x, y_2[1], "r--", label='No False order')
 # p2_3, = twin1.plot(x, y_3[1], "r-.", label='Only False order')
 
-# twin2 = ax.twinx()
-# twin2.spines.right.set_position(("axes", 1.2))
-# p3_1, = twin2.plot(x, y_1[2], "g-", label='All Samples')
+twin2 = ax.twinx()
+twin2.spines.right.set_position(("axes", 1.2))
+p3_1, = twin2.plot(x, y_1[2], "g-", label='All Samples')
 # p3_2, = twin2.plot(x, y_2[2], "g--", label='No False order')
 # p3_3, = twin2.plot(x, y_3[2], "g-.", label='Only False order')
 
 ax.set_xlim(0, 100)
-ax.set_ylim(0, 10)
-# twin1.set_ylim(0, 100)
-# twin2.set_ylim(0, 10)
+ax.set_ylim(0, 100)
+twin1.set_ylim(0, 100)
+twin2.set_ylim(0, 10)
 
 ax.set_xlabel("Minimum confidence (%)")
-ax.set_ylabel(names[2])
-# twin1.set_ylabel(names[1])
-# twin2.set_ylabel(names[2])
+ax.set_ylabel(names[0])
+twin1.set_ylabel(names[1])
+twin2.set_ylabel(names[2])
 
 ax.yaxis.label.set_color(p1_1.get_color())
-# twin1.yaxis.label.set_color(p2_1.get_color())
-# twin2.yaxis.label.set_color(p3_1.get_color())
+twin1.yaxis.label.set_color(p2_1.get_color())
+twin2.yaxis.label.set_color(p3_1.get_color())
 
 tkw = dict(size=4, width=1.5)
 ax.tick_params(axis='y', colors=p1_1.get_color(), **tkw)
-# twin1.tick_params(axis='y', colors=p2_1.get_color(), **tkw)
-# twin2.tick_params(axis='y', colors=p3_1.get_color(), **tkw)
+twin1.tick_params(axis='y', colors=p2_1.get_color(), **tkw)
+twin2.tick_params(axis='y', colors=p3_1.get_color(), **tkw)
 ax.tick_params(axis='x', **tkw)
 
-ax.legend(handles=[p1_1, p1_2, p1_3])
+# ax.legend(handles=[p1_1, p1_2, p1_3])
 
 plt.show()
 
