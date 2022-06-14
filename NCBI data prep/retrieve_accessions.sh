@@ -1,3 +1,5 @@
+# Make sure to have EntrezDirect: https://www.ncbi.nlm.nih.gov/books/NBK179288/
+# This script is based in large part on the README from: https://github.com/schultzm/entrez_direct_tut
 BIOSAMPLES=$(esearch -db nuccore -query "rep_origin [FEATURE] AND bacteria[Organism]" | elink -target biosample | efetch -format docsum | xtract.Linux -pattern DocumentSummary -block Accession -element Accession)
 MDATA="mdata2.tab"
 echo -e "BioSample\tAccession\tRefSeq" >> ${MDATA} #Put a header in the file
