@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as np
 
 def plot_Z_curve_3D(Z_curve, name):
