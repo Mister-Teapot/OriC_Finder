@@ -22,7 +22,7 @@ def plot_Z_curve_2D(y_val_list, peaks, name):
         peaks      : list of lists with indeces of peaks for arrays in y_val_list
         name       : used in plot title
     """
-    color_list = ['r', 'b', 'g', 'k']
+    color_list = ['r', 'b', 'g', 'c']
     fig = plt.figure(figsize=(7,5), tight_layout=True)
     base_ax = plt.axes()
     ax_list = [base_ax] + [base_ax.twinx() for i in range(len(y_val_list) - 1)]
