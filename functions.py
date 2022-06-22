@@ -242,9 +242,10 @@ def get_dnaa_boxes(box_list: list = None, max_mismatches: int = 2) -> set:
     consensi = consensus_1 + consensus_2 + consensus_3 + consensus_4 if box_list is None else box_list
     boxes = []
     for consensus in consensi:
-        if len(consensus) != 9:
-            raise ValueError('Provided box_list led to a sequence not of length 9.')
-        boxes.extend(sy.AllStrings(consensus))
+        all_seqs = sy.AllStrings(consensus)
+        for seq in all_seqs:
+            if len(seq) != 9: raise ValueError('Provided box_list led to a sequence not of length 9.')
+        boxes.extend(all_seqs)
     boxes = list(set(boxes))
 
     # Get all unique strings while allowing for max. 2 mismatches.
