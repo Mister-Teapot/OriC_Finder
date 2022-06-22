@@ -186,7 +186,7 @@ def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_di
     return pd.DataFrame(all_distances)
 
 
-def precision_recall(df, max_dist, alt_oriC=None, use_confidence=None):
+def get_distances_precision_and_recall(df, max_dist, alt_oriC=None, use_confidence=None):
     '''Uses top oriC of prediction to compare to DoriC. Only takes max_dist as fraction of genome length.'''
     TP, TN, FP, FN = 0, 0, 0, 0
 
@@ -258,36 +258,38 @@ if __name__ == '__main__':
     print('Genome size is not very consistent. The max distance that two oriC can be from each other will')
     print(f'be set to {disp_dist} of the total genome length rather than a fixed number for all genomes.\n')
 
-    steps = 100
-    p_r_dict = {'min_confidence': [x for x in range(steps+1)]}
-    for v in ['v3', 'v4']:
-        p_r_dict[f'precision_{v}'] = []
-        p_r_dict[f'recall_{v}'] = []
-        comparator_df = pd.read_csv('Comparison/'+v+'/in_both_sets_all.csv')
-        for i in range(steps+1):
-            distances, precision, recall = precision_recall(comparator_df, MAX_DIST, use_confidence=i/steps)
-            p_r_dict[f'precision_{v}'].append(precision*100)
-            p_r_dict[f'recall_{v}'].append(recall*100)
+    # steps = 100
+    # p_r_dict = {'min_confidence': [x for x in range(steps+1)]}
+    # for v in ['v3', 'v4']:
+    #     p_r_dict[f'precision_{v}'] = []
+    #     p_r_dict[f'recall_{v}'] = []
+    #     comparator_df = pd.read_csv('Comparison/'+v+'/in_both_sets_all.csv')
+    #     for i in range(steps+1):
+    #         distances, precision, recall = get_distances_precision_and_recall(comparator_df, MAX_DIST, use_confidence=i/steps)
+    #         p_r_dict[f'precision_{v}'].append(precision*100)
+    #         p_r_dict[f'recall_{v}'].append(recall*100)
 
-    pd.DataFrame(p_r_dict).to_csv('Comparison/version_3_and_4_precision_recall.csv', index=False)
+    # pd.DataFrame(p_r_dict).to_csv('Comparison/version_3_and_4_precision_recall.csv', index=False)
 
     # ALL DATA
-    # v3 = pd.read_csv('Comparison/v3/in_both_sets_all.csv')['RefSeq']
-    # comparator_df = comparator_df[comparator_df['RefSeq'].isin(v3)]
-    # for i in range(11):
-    #     hist_all_df = compare_dbs(df=comparator_df, info_file_path=None, print_info=False, max_dist=MAX_DIST, alt_oriC='oriC_middles_0', use_confidence=i/10, exclude_False_order=False)
+    # hist_all_df, precision, recall = get_distances_precision_and_recall(df=comparator_df, max_dist=MAX_DIST, use_confidence=0.4)
+    # print(f'All samples: precision: {precision}, recall: {recall}')
     # hist_all_df.to_csv('Comparison/'+VERSION+'/hist_all_df.csv', index=False)
     # hist_all_df = pd.read_csv('Comparison/'+VERSION+'/hist_all_df.csv')
     # pf.distance_histogram(hist_all_df, log=True)
     # pf.distance_histogram(hist_all_df, log=False)
 
-    # # All the same steps, but only the EXPERIMENTAL DATA
-    # exp_refseq = [ # Accessions that have been experimentally verified.
-    #     'NC_000964', 'NC_002947', 'NC_003272', 'NC_003869', 'NC_003888', 'NC_005090', 'NC_006461', 'NC_007633', 'NC_000913', 'NC_003047',
-    #     'NC_007604', 'NC_000962', 'NC_002696', 'NC_002971', 'NC_005363', 'NC_008255', 'NC_009850', 'NC_010546', 'NC_010547', 'NC_011916', NC_000117
-    # ]
-    # experiment_df = comparator_df[comparator_df['RefSeq'].isin(exp_refseq)]
-    # hist_exp_df = compare_dbs(df=experiment_df, info_file_path=None, print_info=True, max_dist=MAX_DIST, use_confidence=0.33)
-    # # pf.distance_histogram(hist_exp_df, log=True)
+    # All the same steps, but only the EXPERIMENTAL DATA
+    exp_refseq = [ # Accessions that have been experimentally verified.
+        'NC_000964', 'NC_002947', 'NC_003272', 'NC_003869', 'NC_003888', 'NC_005090', 'NC_006461',
+        'NC_007633', 'NC_000913', 'NC_003047', 'NC_007604', 'NC_000962', 'NC_002696', 'NC_002971',
+        'NC_005363', 'NC_008255', 'NC_009850', 'NC_010546', 'NC_010547', 'NC_011916', 'NC_000117'
+    ]
+    experiment_df = comparator_df[comparator_df['RefSeq'].isin(exp_refseq)]
+    hist_exp_df, precision, recall = get_distances_precision_and_recall(df=experiment_df, max_dist=MAX_DIST, use_confidence=0)
+    print(f'Exp samples: precision: {precision}, recall: {recall}')
+    print(hist_exp_df)
+    # pf.distance_histogram(hist_exp_df, log=True)
     # pf.distance_histogram(hist_exp_df, log=False)
+
 
