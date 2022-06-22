@@ -5,6 +5,7 @@ import sre_yield as sy
 from itertools import combinations, product
 from Bio import SeqIO, Entrez
 from typing import TextIO, Union, Generator
+from urllib.error import HTTPError
 
 # Self-made module
 from peak import Peak
@@ -12,9 +13,11 @@ from peak import Peak
 def fetch_file(accession: str, email: str, api_key: Union[str, None], rettype: str) -> TextIO:
     """Downloads the given file_tpye of the given accession in temporary memory"""
     Entrez.email = email
-    if api_key is not None:
-        Entrez.api_key = api_key
-    return Entrez.efetch(db="nuccore", id=accession, rettype=rettype, retmode="text")
+    if api_key is not None: Entrez.api_key = api_key
+    try: return Entrez.efetch(db="nuccore", id=accession, rettype=rettype, retmode="text")
+    except HTTPError: pass
+    (api_message_1, api_message_2) = (f' with API_key \'{api_key}\'', ' and if your API_key if correctly typed and linked to the given email') if api_key is not None else ('', '')
+    raise ValueError(f'Unable to fetch accession: \'{accession}\' using \'{email}\'{api_message_1}. Please check if the accession is of an existing chromosomal sequence{api_message_2}.')
 
 
 def read_FASTA(handle: Union[TextIO, str]) -> tuple:
@@ -202,13 +205,24 @@ def generate_mismatched_strings(string: str, mismatches: int = 2) -> Generator:
             yield ''.join([string[i] if i not in indices else keys[i] for i in range(string_len)])
 
 
-def get_dnaa_boxes() -> set:
-    '''Get all unique dnaa-box 9-mers that allow for 0, 1, or 2 mismatches.'''
+def get_dnaa_boxes(box_list: list = None, max_mismatches: int = 2) -> set:
+    '''
+    Standard parameters: Get all unique dnaa-box 9-mers that allow for 0, 1, or 2 mismatches.
+    Sources as comments in function.
+
+    Parameters:
+    - `box_list`       : list with strings of dnaa-boxes to use. Supports regex for use of a consensus sequence. Make sure all given boxes are 9 bases long.
+        E.g. `['AA(T|G)AAAAAA']` returns `['AATAAAAAA', 'AAGAAAAAA']`.
+    - `max_mismatches` : maximum allowed mismatches in dnaa-box that is still seen as an accepted dnaa-box.
+        E.g. 2 allows all kmers that have 0, 1 or 2 mismatches with the dnaa-box.\n
+    Return:
+        `dnaa_boxes`   : set of 9-mers matching the given parameters.
+    '''
 
     #             Sequences                       DOI                                            Year  Notes
     consensus_1 = ['TTAT(A|C)CA(A|C)A']         # https://doi.org/10.1016/0092-8674(84)90284-8  (1984) The first consensus
     consensus_2 = ['TGTG(G|T)ATAAC']            # https://doi.org/10.1016/0022-2836(85)90299-2  (1985) Matsui-box
-    consensus_3 = ['TTAT(A|T|C|G)CACA']         # https://doi.org/10.1093/dnares/dsm017         (2007) In roughly all eubacteria (not just B. subtilis)
+    consensus_3 = ['TTAT(A|T|C|G)CACA']         # https://doi.org/10.1093/dnares/dsm017         (2007) In (roughly) all eubacteria, not just B. subtilis
     consensus_4 = [                             # https://doi.org/10.1093/emboj/16.21.6574      (1997) Affinity study
         'TTATCCACA', 'TTTTCCACA', 'TTATCAACA',
         'TCATTCACA', 'TTATACACA', 'TTATCCAAA'
@@ -219,21 +233,23 @@ def get_dnaa_boxes() -> set:
 
     '''
     Useful acticles about DnaA(-boxes):
-       https://doi.org/10.1101/cshperspect.a012922
-       https://doi.org/10.1093/nar/gkr832
-       https://doi.org/10.3389/fmicb.2018.00319
+    - https://doi.org/10.1101/cshperspect.a012922
+    - https://doi.org/10.1093/nar/gkr832
+    - https://doi.org/10.3389/fmicb.2018.00319
     '''
 
     # Get all dnaa-boxes as strings
-    consensi = consensus_1 + consensus_2 + consensus_3 + consensus_4
+    consensi = consensus_1 + consensus_2 + consensus_3 + consensus_4 if box_list is None else box_list
     boxes = []
     for consensus in consensi:
-        boxes.extend(set(sy.AllStrings(consensus)))
+        if len(consensus) != 9:
+            raise ValueError('Provided box_list led to a sequence not of length 9.')
+        boxes.extend(sy.AllStrings(consensus))
     boxes = list(set(boxes))
 
     # Get all unique strings while allowing for max. 2 mismatches.
     mismatch_boxes = boxes.copy()
     for box in boxes:
-        mismatch_boxes.extend(list(generate_mismatched_strings(box, 1)))
-        mismatch_boxes.extend(list(generate_mismatched_strings(box, 2)))
+        for i in range(abs(max_mismatches)):
+            mismatch_boxes.extend(list(generate_mismatched_strings(box, i+1)))
     return set(mismatch_boxes)
