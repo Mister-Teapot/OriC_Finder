@@ -29,6 +29,7 @@ This script predicts the origin of replication for circular bacterial DNA. It ma
 - [Pandas](https://pandas.pydata.org/)
 - [NumPy](https://numpy.org/)
 - [Biopython](https://biopython.org/)
+- [sre_yield](https://pypi.org/project/sre-yield/) (generating all dnaA-box consensus sequences)
 
 ### `Plotting_functions.py`
 There are 3 general functions in this file which can be used to plot any generic 1D-np.array. To use these functions, make sure to have [matplotlib](https://matplotlib.org/) installed
