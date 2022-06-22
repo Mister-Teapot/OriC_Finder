@@ -1,9 +1,10 @@
 import re
 import numpy as np
+import sre_yield as sy
 
 from itertools import combinations, product
 from Bio import SeqIO, Entrez
-from typing import TextIO, Union
+from typing import TextIO, Union, Generator
 
 # Self-made module
 from peak import Peak
@@ -16,8 +17,8 @@ def fetch_file(accession: str, email: str, api_key: Union[str, None], rettype: s
     return Entrez.efetch(db="nuccore", id=accession, rettype=rettype, retmode="text")
 
 
-def read_FASTA(handle: TextIO) -> tuple:
-    """Read a file and returns the SeqRecord of only the first entry in the file"""
+def read_FASTA(handle: Union[TextIO, str]) -> tuple:
+    """Read a FASTA file and returns the name and sequence of only the first entry in the file"""
     Seq_records = SeqIO.parse(handle, 'fasta')
     Seq_obj = next(Seq_records)
     return Seq_obj.id, Seq_obj.seq 
@@ -167,3 +168,72 @@ def _DFS_recurse(idx, adj_mat, visited, connected_list, threshold):
         elif adj_mat[i][idx] <= threshold and not visited[i]:
             _, _, visited, connected_list, _ = _DFS_recurse(i, adj_mat,visited, connected_list, threshold)
     return idx, adj_mat, visited, connected_list, threshold
+
+
+def binary_search(arr: list, x) -> Union[int, None]:
+    """Return index of `x` in `arr`. None, if `x` not in `arr`. Search done iteratively."""
+    low, mid, high = 0, 0, len(arr)-1
+
+    while low <= high:
+        mid = (high + low) // 2
+        if arr[mid] < x:
+            low = mid + 1
+        elif arr[mid] > x:
+            high = mid - 1
+        else:
+            return mid
+    return None
+
+
+def generate_mismatched_strings(string: str, mismatches: int = 2) -> Generator:
+    string_len = len(string)
+    letters = 'ACGT'
+
+    for indices in combinations(range(string_len), mismatches):
+        for replacements in product(letters, repeat=mismatches):
+            skip = False
+            for i, a in zip(indices, replacements):
+                if string[i] == a:
+                    skip = True
+            if skip:
+                continue
+
+            keys = dict(zip(indices, replacements))
+            yield ''.join([string[i] if i not in indices else keys[i] for i in range(string_len)])
+
+
+def get_dnaa_boxes() -> set:
+    '''Get all unique dnaa-box 9-mers that allow for 0, 1, or 2 mismatches.'''
+
+    #             Sequences                       DOI                                            Year  Notes
+    consensus_1 = ['TTAT(A|C)CA(A|C)A']         # https://doi.org/10.1016/0092-8674(84)90284-8  (1984) The first consensus
+    consensus_2 = ['TGTG(G|T)ATAAC']            # https://doi.org/10.1016/0022-2836(85)90299-2  (1985) Matsui-box
+    consensus_3 = ['TTAT(A|T|C|G)CACA']         # https://doi.org/10.1093/dnares/dsm017         (2007) In roughly all eubacteria (not just B. subtilis)
+    consensus_4 = [                             # https://doi.org/10.1093/emboj/16.21.6574      (1997) Affinity study
+        'TTATCCACA', 'TTTTCCACA', 'TTATCAACA',
+        'TCATTCACA', 'TTATACACA', 'TTATCCAAA'
+    ]
+    consensus_5 = [                             # https://doi.org/10.1007/BF00273584            (1991) Only in E. coli K12. Do not use.
+        '(T|C)(T|C)(A|T|C)T(A|C)C(A|G)(A|C|T)(A|C)'
+    ]
+
+    '''
+    Useful acticles about DnaA(-boxes):
+       https://doi.org/10.1101/cshperspect.a012922
+       https://doi.org/10.1093/nar/gkr832
+       https://doi.org/10.3389/fmicb.2018.00319
+    '''
+
+    # Get all dnaa-boxes as strings
+    consensi = consensus_1 + consensus_2 + consensus_3 + consensus_4
+    boxes = []
+    for consensus in consensi:
+        boxes.extend(set(sy.AllStrings(consensus)))
+    boxes = list(set(boxes))
+
+    # Get all unique strings while allowing for max. 2 mismatches.
+    mismatch_boxes = boxes.copy()
+    for box in boxes:
+        mismatch_boxes.extend(list(generate_mismatched_strings(box, 1)))
+        mismatch_boxes.extend(list(generate_mismatched_strings(box, 2)))
+    return set(mismatch_boxes)
