@@ -15,7 +15,7 @@ import oriC_Finder as of
 from peak import Peak
 import plotting_functions as pf
 
-MAX_DIST = 3/100
+MAX_DIST = 2.5/100
 VERSION  = 'v4'
 
 
@@ -52,6 +52,7 @@ def make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv):
 
 def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_dist=30000, alt_oriC=None, use_confidence=None, exclude_False_order=False):
     '''
+    DEPRECIATED
     Compares results. Results can be loaded from a pandas.DataFrame OR csv.
     info       : If str, writes a text_file to the given location with some info on the analysis.
     print_info : If True, prints the same info that was written to 'info' with print-statements for quick reading.
@@ -185,6 +186,53 @@ def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_di
     return pd.DataFrame(all_distances)
 
 
+def precision_recall(df, max_dist, alt_oriC=None, use_confidence=None):
+    '''Uses top oriC of prediction to compare to DoriC. Only takes max_dist as fraction of genome length.'''
+    TP, TN, FP, FN = 0, 0, 0, 0
+
+    all_distances = {
+        'RefSeq'     : [],
+        'D_idx'      : [],
+        'Distance_bp': [],
+        'Distance_pc': []
+    }
+
+    for i, sample_original in df.iterrows():
+        sample = sample_original.copy()
+        sample.dropna(inplace=True)
+        seq_len = sample['Sequence_length']
+
+        D_oriC_cols = sorted( [i for i in sample.axes[0] if 'DoriC_oriC' in i], key=lambda x:x[-1] )
+        D_oriC_middles = [ Peak.get_middle( int( literal_eval(sample[D_oriC_col])[0] ), int( literal_eval(sample[D_oriC_col])[1] ), seq_len ) for D_oriC_col in D_oriC_cols ]
+
+        # name of column to use
+        Z_oriC_col = 'oriC_middles_0' if alt_oriC is None else alt_oriC
+        Z_oriC_middle = int(sample[Z_oriC_col]) if use_confidence is None or sample[f'Occurance_oriC_0'] >= use_confidence else None
+
+        if Z_oriC_middle is None:
+            FN += len(D_oriC_middles)
+        else:
+            window_size = int(seq_len * max_dist)
+            for i in range(len(D_oriC_middles)):
+                D_oriC_middles[i] = Peak(D_oriC_middles[i], seq_len, window_size)
+            Z_oriC = Peak(Z_oriC_middle, seq_len, window_size)
+
+            for i, D_oriC in enumerate(D_oriC_middles):
+                distance_basepair = Peak.calc_dist(D_oriC.middle, Z_oriC.middle, seq_len)
+                distance_percent  = int( 100 * Peak.calc_dist(D_oriC.middle, Z_oriC.middle, seq_len)/seq_len )
+
+                if distance_percent <= max_dist: TP += 1
+                else: FP += 1
+
+                all_distances['RefSeq'].append(sample['RefSeq'])
+                all_distances['D_idx'].append(i)
+                all_distances['Distance_bp'].append(distance_basepair)
+                all_distances['Distance_pc'].append(distance_percent)
+    precision = TP / (TP + FP)
+    recall = TP / (TP + FN)
+    return pd.DataFrame(all_distances), precision, recall
+
+
 if __name__ == '__main__':
     # Input paths
     Z_curve_csv = 'NCBI data prep/oriC_predictions_'+VERSION+'_csvs/Predicted_DoriC_accessions.csv'#Predicted_4k.csv'
@@ -210,11 +258,24 @@ if __name__ == '__main__':
     print('Genome size is not very consistent. The max distance that two oriC can be from each other will')
     print(f'be set to {disp_dist} of the total genome length rather than a fixed number for all genomes.\n')
 
-    # # ALL DATA
+    steps = 100
+    p_r_dict = {'min_confidence': [x for x in range(steps+1)]}
+    for v in ['v3', 'v4']:
+        p_r_dict[f'precision_{v}'] = []
+        p_r_dict[f'recall_{v}'] = []
+        comparator_df = pd.read_csv('Comparison/'+v+'/in_both_sets_all.csv')
+        for i in range(steps+1):
+            distances, precision, recall = precision_recall(comparator_df, MAX_DIST, use_confidence=i/steps)
+            p_r_dict[f'precision_{v}'].append(precision*100)
+            p_r_dict[f'recall_{v}'].append(recall*100)
+
+    pd.DataFrame(p_r_dict).to_csv('Comparison/version_3_and_4_precision_recall.csv', index=False)
+
+    # ALL DATA
     # v3 = pd.read_csv('Comparison/v3/in_both_sets_all.csv')['RefSeq']
     # comparator_df = comparator_df[comparator_df['RefSeq'].isin(v3)]
-    for i in range(11):
-        hist_all_df = compare_dbs(df=comparator_df, info_file_path=None, print_info=False, max_dist=MAX_DIST, alt_oriC='oriC_middles_0', use_confidence=i/10, exclude_False_order=False)
+    # for i in range(11):
+    #     hist_all_df = compare_dbs(df=comparator_df, info_file_path=None, print_info=False, max_dist=MAX_DIST, alt_oriC='oriC_middles_0', use_confidence=i/10, exclude_False_order=False)
     # hist_all_df.to_csv('Comparison/'+VERSION+'/hist_all_df.csv', index=False)
     # hist_all_df = pd.read_csv('Comparison/'+VERSION+'/hist_all_df.csv')
     # pf.distance_histogram(hist_all_df, log=True)
@@ -223,7 +284,7 @@ if __name__ == '__main__':
     # # All the same steps, but only the EXPERIMENTAL DATA
     # exp_refseq = [ # Accessions that have been experimentally verified.
     #     'NC_000964', 'NC_002947', 'NC_003272', 'NC_003869', 'NC_003888', 'NC_005090', 'NC_006461', 'NC_007633', 'NC_000913', 'NC_003047',
-    #     'NC_007604', 'NC_000962', 'NC_002696', 'NC_002971', 'NC_005363', 'NC_008255', 'NC_009850', 'NC_010546', 'NC_010547', 'NC_011916'
+    #     'NC_007604', 'NC_000962', 'NC_002696', 'NC_002971', 'NC_005363', 'NC_008255', 'NC_009850', 'NC_010546', 'NC_010547', 'NC_011916', NC_000117
     # ]
     # experiment_df = comparator_df[comparator_df['RefSeq'].isin(exp_refseq)]
     # hist_exp_df = compare_dbs(df=experiment_df, info_file_path=None, print_info=True, max_dist=MAX_DIST, use_confidence=0.33)
