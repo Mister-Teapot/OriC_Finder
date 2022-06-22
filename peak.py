@@ -68,7 +68,7 @@ class Peak():
             merged_idx = min(a, b) + dist_1//2
         return merged_idx
 
-    def intersecting_windows(self, other) -> bool:
+    def intersecting_windows(self, other: "Peak") -> bool:
         '''T|F wether self's window intersects with other's window'''
         if not isinstance(other, Peak):
             raise ValueError(f'other is a {type(other)}, must be a Peak object')
