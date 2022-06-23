@@ -81,9 +81,7 @@ class Peak():
     def contains_point(self, point: Union[int, "Peak"]) -> bool:
         '''T|F wether a point is within a Peak's window'''
         p = point.middle if isinstance(point, Peak) else point
-        five = Peak.calc_dist(self.five_side, p, self.seq_len)
-        three = Peak.calc_dist(self.three_side, p, self.seq_len)
-        return (five <= self.window_size and three <= self.window_size)
+        return self.window_size // 2 >= Peak.calc_dist(self.middle, p, self.seq_len)
 
     def __repr__(self):
         return f'Peak(middle={self.middle}, window_size={self.window_size})'
