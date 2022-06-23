@@ -207,7 +207,7 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
     - `genome_fasta`        : FASTA-file with circular bacterial DNA
     - `genes_fasta`         : FASTA-file with gene info in the same format as when acquired using `E-Utils(db='nuccore', rettype='fasta_cds_na')`
     - `custom_dnaa_boxes`   : If None, will use the [consensus DnaA-box](https://doi.org/10.1093/bib/bbn031): `TTAT(A|T|C|G)CACA`.
-                              Else, provide a list of 9 base strings. Regex supported for all-unique box generation.
+                              Else, provide a list of 9 base strings. Regex **NOT** supported for all-unique box generation.
                               Example input: `['AAAAAAAAA', 'TTTTTTTTT']`.
     - `max_mismatches`      : Maximum allowed mismatches before a 9-mer is considered to fit the dnaa_box. Recommended: 0; recommended max: 2.
     - `accession`           : Accession number of the sequence to fetch
@@ -248,7 +248,7 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
 
     # Analysing sequence properties
     start_1 = time.time()
-    box_list = ['TTAT(A|T|C|G)CACA'] if custom_dnaa_boxes is None else list(custom_dnaa_boxes)
+    box_list = ['TTATACACA', 'TTATTCACA', 'TTATCCACA', 'TTATGCACA'] if custom_dnaa_boxes is None else list(custom_dnaa_boxes)
     dnaa_boxes = fc.get_dnaa_boxes(box_list=box_list, max_mismatches=int(max_mismatches))
     start_calc = time.time()
     x, y, z, gc, kmers = calc_disparities(sequence, 9, dnaa_boxes)
