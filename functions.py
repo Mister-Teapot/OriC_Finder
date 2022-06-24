@@ -250,6 +250,7 @@ def get_dnaa_boxes(box_list: list, max_mismatches: int = 2) -> set:
     - https://doi.org/10.1101/cshperspect.a012922
     - https://doi.org/10.1093/nar/gkr832
     - https://doi.org/10.3389/fmicb.2018.00319
+    - https://doi.org/10.1046/j.1365-2958.1996.6481362.x.
     '''
 
     # Get all dnaa-boxes as strings
