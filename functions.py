@@ -1,23 +1,38 @@
 import re
 import numpy as np
-# import sre_yield as sy
 
 from itertools import combinations, product
 from Bio import SeqIO, Entrez
 from typing import TextIO, Union, Generator
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
+import socket
 
 # Self-made module
 from peak import Peak
+
+
+def connected_to_internet() -> bool:
+    """Simple check for internet connection. Can return false-positive in case of server within local network."""
+    try:
+        host = socket.gethostbyname('one.one.one.one')
+        with socket.create_connection((host, 80), 2) as connection:
+            connection.close()
+        return True
+    except Exception: pass
+    return False
+
 
 def fetch_file(accession: str, email: str, api_key: Union[str, None], rettype: str) -> TextIO:
     """Downloads the given file_tpye of the given accession in temporary memory"""
     Entrez.email = email
     if api_key is not None: Entrez.api_key = api_key
-    try: return Entrez.efetch(db="nuccore", id=accession, rettype=rettype, retmode="text")
-    except HTTPError: pass
-    (api_message_1, api_message_2) = (f' with API_key \'{api_key}\'', ' and if your API_key if correctly typed and linked to the given email') if api_key is not None else ('', '')
-    raise ValueError(f'Unable to fetch accession: \'{accession}\' using \'{email}\'{api_message_1}. Please check if the accession is of an existing chromosomal sequence{api_message_2}.')
+    try:
+        return Entrez.efetch(db="nuccore", id=accession, rettype=rettype, retmode="text")
+    except HTTPError as BadRequest:
+        (api_message_1, api_message_2) = (f' with API_key \'{api_key}\'', ' and if your API_key if correctly typed and linked to the given email') if api_key is not None else ('', '')
+        raise ValueError(f'Unable to fetch accession: \'{accession}\' using \'{email}\'{api_message_1}. Please check if the accession is of an existing chromosomal sequence{api_message_2}.') from BadRequest
+    except URLError as NoConnection:
+        raise ConnectionError('You are fetching a file from the NCBI servers. Please make sure you have an internet connection to do so.') from NoConnection
 
 
 def read_FASTA(handle: Union[TextIO, str]) -> tuple:
@@ -45,7 +60,7 @@ def read_gene_info(handle: TextIO, genes_list: list) -> dict:
 
 
 def extract_locations(seq_len: int, genes_dict: dict) -> list:
-    '''Returns Peaks of the middle position of every gene in the dictionary.'''
+    """Returns Peaks of the middle position of every gene in the dictionary."""
     locations = []
     for gene_dict in genes_dict.values():
         clean_locs = handle_location(gene_dict['location'], seq_len)
@@ -57,10 +72,10 @@ def extract_locations(seq_len: int, genes_dict: dict) -> list:
 
 
 def handle_location(location: str, seq_len: int) -> list:
-    '''
+    """
     Gene locations come in a billion flavours due to different annotation options. This function handles the vast majority of cases.
     Biopython can parse all location formats (AFAIK), but I can't find how to access their parsers, since they're hidden/private in some of the classes
-    '''
+    """
     handled = []
     if re.search(r'[^joincmplemt<>,\s\d\(\)\.]', location) is not None:
         return None
@@ -83,14 +98,14 @@ def handle_location(location: str, seq_len: int) -> list:
 
 
 def _split_location(location):
-    '''
+    """
     Private: used by handle_location. Splits a `location` string into its location groups.
 
     (Extreme) e.g.:
     \t`location = 'join(complement(1..>2),3..4,<5..6,500),100..200,join(500..600,complement(0..4))'`\n
     returns:
     \t`[['1..>2', '3..4', '5..6', '500'], ['100..200'], ['500..600', '0..4']]`
-    '''
+    """
     raw_locs = re.split(r',\s?', location)
     locs = []
     done, i = False, 0
@@ -113,13 +128,13 @@ def _split_location(location):
 
 
 def get_adj_mat(peaks_a: list, peaks_b: list = None, seq_len: int = None) -> np.ndarray:
-    '''
+    """
     Gets adjacency matrix for given list of `Peak` or `int` objects.
     The matrix can be between a list and the elements of itself or between the elements of two lists.
     All elements in each list must be of the same type.
     Elements in `peaks_a` must be the same type as those in `peaks_b`.
     If elements are integers, `seq_len` must be provided.
-    '''
+    """
     # Error handling
     are_integers = True if isinstance(peaks_a[0], int) else False
     if are_integers and seq_len is None:
@@ -149,7 +164,7 @@ def get_adj_mat(peaks_a: list, peaks_b: list = None, seq_len: int = None) -> np.
 
 
 def get_connected_groups(peaks: list, adj_mat: np.ndarray, threshold: int) -> list:
-    '''Recursively find connected groups in an undirected graph'''
+    """Recursively find connected groups in an undirected graph"""
     visited = [False] * len(peaks)
     connected_groups_idx = []
     for i in range(len(peaks)):
@@ -162,7 +177,7 @@ def get_connected_groups(peaks: list, adj_mat: np.ndarray, threshold: int) -> li
 
 
 def _DFS_recurse(idx, adj_mat, visited, connected_list, threshold):
-    '''Private: used by get_connected_groups for recursion'''
+    """Private: used by get_connected_groups for recursion"""
     visited[idx] = True
     connected_list.append(idx)
     for i in range(len(visited)):
@@ -206,7 +221,7 @@ def generate_mismatched_strings(string: str, mismatches: int = 2) -> Generator:
 
 
 def get_dnaa_boxes(box_list: list, max_mismatches: int = 2) -> set:
-    '''
+    """
     Standard parameters: Get all unique dnaa-box 9-mers that allow for 0, 1, or 2 mismatches.
     Sources as comments in function.
 
@@ -216,7 +231,7 @@ def get_dnaa_boxes(box_list: list, max_mismatches: int = 2) -> set:
         E.g. 2 allows all kmers that have 0, 1 or 2 mismatches with the dnaa-box.\n
     Return:
         `dnaa_boxes`   : set of 9-mers matching the given parameters.
-    '''
+    """
 
     #             Sequences                       DOI                                            Year  Notes
     consensus_1 = ['TTAT(A|C)CA(A|C)A']         # https://doi.org/10.1016/0092-8674(84)90284-8  (1984) The first consensus
