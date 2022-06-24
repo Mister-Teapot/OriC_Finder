@@ -176,20 +176,23 @@ def process_array(curve: np.ndarray, mode: str, window_size: int) -> list:
     return single_peaks + merged_peaks
 
 
-def get_occurances_gene_loc_info(current_oriCs: list, matrix: np.ndarray) -> Tuple[list, list]:
+def get_occurances_gene_loc_info(matrix: np.ndarray) -> list:
     '''Process the location of the genes of interest and rank the potential oriCs based on how close they are to these genes'''
+    if np.min(matrix) == np.max(matrix):
+        return [1] * matrix.shape[1]
     norm_mat = (matrix - np.min(matrix)) / (np.max(matrix) - np.min(matrix))
     return [1 - x for x in np.mean(norm_mat, axis=1)]
 
 
-def get_occurances_box_loc_info(current_oriCs: list, kmer_dict: dict) -> Tuple[list, list]:
+def get_occurances_box_loc_info(current_oriCs: list, kmer_dict: dict) -> list:
     '''Process the location of dnaa_boxes and rank potential oriCs based on most surrounding dnaa_boxes.'''
     contains_boxes = []
     all_pos = [pos for pos_list in kmer_dict.values() for pos in pos_list]
     for oriC in current_oriCs:
         count = 0
         for pos in all_pos:
-            if oriC.contains_point(pos): count += 1
+            if oriC.contains_point(pos):
+                count += 1
         contains_boxes.append(count)
     return [x/sum(contains_boxes) if sum(contains_boxes) != 0 else 0 for x in contains_boxes]
 
@@ -274,7 +277,7 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
     checkpoint = time.time() - start_1
     gene_handle = fc.fetch_file(_accession, email, api_key, 'fasta_cds_na') if genes_fasta is None else genes_fasta
     start_2 = time.time()
-    genes_of_interest = ['dnaA', 'dnaN'] # 'gidA', 'parA', 'hemE' # not sure if these are proper yet
+    genes_of_interest = ['dnaA'] # , 'dnaN' # 'gidA', 'parA', 'hemE' # not sure if these are proper yet
     genes_dict = fc.read_gene_info(gene_handle, genes_of_interest)
     del gene_handle
 
@@ -284,10 +287,10 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
         # print('DnaA & DnaN @', gene_locations)
         if gene_locations is None: return None
         matrix_oriCs_genes = fc.get_adj_mat(Z_oriCs, gene_locations)
-        G_occurances = get_occurances_gene_loc_info(Z_oriCs, matrix_oriCs_genes)
+        G_occurances = get_occurances_gene_loc_info(matrix_oriCs_genes)
     else:
         warnings.warn(f'\n\n\tNone of the genes of interest were found in the \'genes_fasta\': {genes_of_interest}\n\tWill not use gene locations in prediction.\n')
-        G_occurances = [] * len(Z_oriCs)
+        G_occurances = [0] * len(Z_oriCs)
 
     # DnaA-box analysis
     D_occurances = get_occurances_box_loc_info(Z_oriCs, kmers)
@@ -302,7 +305,7 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
         avg = sum(rank_dict[key])/len(rank_dict[key])
         rank_dict[key].append(avg)
         Avg_occurances.append(avg)
-    '''
+    '''                                     CHECK ERROR FROM CLUSTER!!!!!!!!!!!!!!!!!!!!!!!!
     rank_dict = 
             # Z_score     G_score     D_score   Avg_score
     oriC_1 : [   0.7,        0.4,        0.4,       0.50]
@@ -345,7 +348,7 @@ if __name__ == '__main__':
 
     # For testing a small folder
     for acc in exp_refseq:
-        properties = find_oriCs(accession=acc, email=email, api_key=api_key, custom_dnaa_boxes=['TTAT(A|T|C|G)CACA'])
+        properties = find_oriCs(accession=acc, email=email, api_key=api_key)
 
         name    = properties['name']
         Z_curve = properties['z_curve']

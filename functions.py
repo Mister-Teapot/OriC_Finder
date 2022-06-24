@@ -205,14 +205,13 @@ def generate_mismatched_strings(string: str, mismatches: int = 2) -> Generator:
             yield ''.join([string[i] if i not in indices else keys[i] for i in range(string_len)])
 
 
-def get_dnaa_boxes(box_list: list = None, max_mismatches: int = 2) -> set:
+def get_dnaa_boxes(box_list: list, max_mismatches: int = 2) -> set:
     '''
     Standard parameters: Get all unique dnaa-box 9-mers that allow for 0, 1, or 2 mismatches.
     Sources as comments in function.
 
     Parameters:
-    - `box_list`       : list with strings of dnaa-boxes to use. Supports regex for use of a consensus sequence. Make sure all given boxes are 9 bases long.
-        E.g. `['AA(T|G)AAAAAA']` returns `['AATAAAAAA', 'AAGAAAAAA']`.
+    - `box_list`       : list with strings of dnaa-boxes to use. Make sure all given boxes are 9 bases long.
     - `max_mismatches` : maximum allowed mismatches in dnaa-box that is still seen as an accepted dnaa-box.
         E.g. 2 allows all kmers that have 0, 1 or 2 mismatches with the dnaa-box.\n
     Return:
@@ -239,18 +238,15 @@ def get_dnaa_boxes(box_list: list = None, max_mismatches: int = 2) -> set:
     '''
 
     # Get all dnaa-boxes as strings
-    consensi = consensus_1 + consensus_2 + consensus_3 + consensus_4 if box_list is None else box_list
-    # boxes = []
-    # for consensus in consensi:
-    #     all_seqs = sy.AllStrings(consensus)
-    #     for seq in all_seqs:
-    #         if len(seq) != 9: raise ValueError('Provided box_list led to a sequence not of length 9.')
-    #     boxes.extend(all_seqs)
-    # boxes = list(set(boxes))
-    boxes = list(set(box_list))
+    for box in box_list:
+        if re.search(r'[^ATCG]', box) is not None:
+            raise ValueError(f'\n\tInput string: \'{box}\' contains forbidden characters. Only use the four nucleotide bases: A, T, C, and G.')
+        if len(box) != 9:
+            raise ValueError(f'Input string \'{box}\' not of length 9.')
+    boxes = set(box)
 
     # Get all unique strings while allowing for max. 2 mismatches.
-    mismatch_boxes = boxes.copy()
+    mismatch_boxes = list(boxes)
     for box in boxes:
         for i in range(abs(max_mismatches)):
             mismatch_boxes.extend(list(generate_mismatched_strings(box, i+1)))
