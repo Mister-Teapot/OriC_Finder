@@ -277,7 +277,7 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
     checkpoint = time.time() - start_1
     gene_handle = fc.fetch_file(_accession, email, api_key, 'fasta_cds_na') if genes_fasta is None else genes_fasta
     start_2 = time.time()
-    genes_of_interest = ['dnaA'] # , 'dnaN' # 'gidA', 'parA', 'hemE' # not sure if these are proper yet
+    genes_of_interest = ['dnaA', 'dnaN'] # 'gidA', 'parA', 'hemE' # not sure if these are proper yet
     genes_dict = fc.read_gene_info(gene_handle, genes_of_interest)
     del gene_handle
 
@@ -289,7 +289,7 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
         matrix_oriCs_genes = fc.get_adj_mat(Z_oriCs, gene_locations)
         G_occurances = get_occurances_gene_loc_info(matrix_oriCs_genes)
     else:
-        warnings.warn(f'\n\n\tNone of the genes of interest were found in the \'genes_fasta\': {genes_of_interest}\n\tWill not use gene locations in prediction.\n')
+        warnings.warn(f'\n\n\tAccession: {_accession}. None of the genes of interest were found in the \'genes_fasta\': {genes_of_interest}\n\tWill not use gene locations in prediction.\n')
         G_occurances = [0] * len(Z_oriCs)
 
     # DnaA-box analysis
