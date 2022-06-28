@@ -318,8 +318,12 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
     }
     '''
 
-    # Final dictionary
+    # Final dictionary: sort based on Avg_occurances
     oriCs = [oriC.middle for oriC in sorted( rank_dict.keys(), key = lambda x:rank_dict[x][-1], reverse=True )]
+    Avg_occurances.sort( reverse=True )
+    Z_occurances.sort( key = lambda x:Avg_occurances[Z_occurances.index(x)], reverse=True )
+    G_occurances.sort( key = lambda x:Avg_occurances[G_occurances.index(x)], reverse=True )
+    D_occurances.sort( key = lambda x:Avg_occurances[D_occurances.index(x)], reverse=True )
     finish = time.time() - start_2 + checkpoint
 
     oriC_properties = {
@@ -371,7 +375,7 @@ if __name__ == '__main__':
     # For Testing single files
 
     # NC_016609: good example of 'harder' sequence. Can't just look for global extremes
-    properties = find_oriCs(accession='NC_016609', email=email, api_key=api_key)
+    properties = find_oriCs(accession='NC_000913', email=email, api_key=api_key)
     name    = properties['name']
     Z_curve = properties['z_curve']
     GC_skew = properties['gc_skew']
