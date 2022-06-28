@@ -259,7 +259,7 @@ def get_dnaa_boxes(box_list: list, max_mismatches: int = 2) -> set:
             raise ValueError(f'\n\tInput string: \'{box}\' contains forbidden characters. Only use the four nucleotide bases: A, T, C, and G.')
         if len(box) != 9:
             raise ValueError(f'Input string \'{box}\' not of length 9.')
-    boxes = set(box)
+    boxes = set(box_list)
 
     # Get all unique strings while allowing for max. 2 mismatches.
     mismatch_boxes = list(boxes)

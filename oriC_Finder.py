@@ -222,8 +222,6 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
     '''
     # NOTE: Potential further improvements:
     #   - AT% measure of oriC: should be characteristically higher than the rest of the genome.
-    #   V Essential gene proximity: genes like DnaA are very likely to be close to or on the oriC
-    #   V Assume DNA is circular
 
     # Clarification:
     #   Z_oriCs: order of found oriCs according to only the Z-curve
@@ -255,9 +253,10 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
     dnaa_boxes = fc.get_dnaa_boxes(box_list=box_list, max_mismatches=int(max_mismatches))
     start_calc = time.time()
     x, y, z, gc, kmers = calc_disparities(sequence, 9, dnaa_boxes)
-    if disp_time: print(f'Calc_disparities took: {time.time()-start_calc:.2f}')
+    if disp_time:
+        print(f'Calc_disparities took: {time.time()-start_calc:.2f}')
 
-    # Finding potential oriCs
+    # Finding potential oriCs based on Z-curve
     windows = [0.01, 0.03, 0.05]
     peaks   = []
     for fraction in windows:
@@ -267,7 +266,7 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
         peaks_gc = process_array(gc, mode='min', window_size=window_size)
         peaks.extend( [j for i in curve_combinations( (x, y, gc), (peaks_x, peaks_y, peaks_gc) ) for j in i] )
 
-    # Finding connected components in undirected graph with a depth-first search
+    ## Finding connected components in undirected graph with a depth-first search to merge Z-curve oriCs
     matrix_pot_oriCs      = fc.get_adj_mat(peaks)
     connected_groups      = fc.get_connected_groups(peaks, matrix_pot_oriCs, int(len(sequence)*windows[-1]))
     Z_oriCs, Z_occurances = merge_oriCs(len(sequence), connected_groups, window_size=int(len(sequence)*windows[-1]))
@@ -279,12 +278,12 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
     start_2 = time.time()
     genes_of_interest = ['dnaA', 'dnaN'] # 'gidA', 'parA', 'hemE' # not sure if these are proper yet
     genes_dict = fc.read_gene_info(gene_handle, genes_of_interest)
+    if disp_time: print(f'Reading gene locations took: {time.time()-start_2:.2f}')
     del gene_handle
 
-    # Check oriC closest to genes of interest and arrange accordingly
+    # Gene-location analysis
     if len(genes_dict.keys()) != 0:
         gene_locations = fc.extract_locations(len(sequence), genes_dict)
-        # print('DnaA & DnaN @', gene_locations)
         if gene_locations is None: return None
         matrix_oriCs_genes = fc.get_adj_mat(Z_oriCs, gene_locations)
         G_occurances = get_occurances_gene_loc_info(matrix_oriCs_genes)
@@ -293,7 +292,11 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
         G_occurances = [0] * len(Z_oriCs)
 
     # DnaA-box analysis
-    D_occurances = get_occurances_box_loc_info(Z_oriCs, kmers)
+    if len(kmers.keys()) != 0:
+        D_occurances = get_occurances_box_loc_info(Z_oriCs, kmers)
+    else:
+        warnings.warn(f'\n\n\tAccession: {_accession}. No DnaA-boxes were found: {dnaa_boxes}\n\tWill not use DnaA-boxes in prediction.\n')
+        D_occurances = [0] * len(Z_oriCs)
 
     # Check false order
     false_order = any( get_false_order( sequence, i[0], Z_oriCs, mode=i[1]) for i in ((x, 'min'), (y, 'max'), (gc, 'min')) )    
@@ -305,12 +308,14 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
         avg = sum(rank_dict[key])/len(rank_dict[key])
         rank_dict[key].append(avg)
         Avg_occurances.append(avg)
-    '''                                     CHECK ERROR FROM CLUSTER!!!!!!!!!!!!!!!!!!!!!!!!
-    rank_dict = 
-            # Z_score     G_score     D_score   Avg_score
-    oriC_1 : [   0.7,        0.4,        0.4,       0.50]
-    oriC_2 : [   0.2,        0.5,        0.4,       0.37]
-    oriC_3 : [   0.1,        0.1,        0.2,       0.13]
+
+    '''
+    rank_dict = {
+              # Z_score     G_score     D_score   Avg_score
+    'oriC_1' : [   0.7,        0.4,        0.4,       0.50],
+    'oriC_2' : [   0.2,        0.5,        0.4,       0.37],
+    'oriC_3' : [   0.1,        0.1,        0.2,       0.13]
+    }
     '''
 
     # Final dictionary
@@ -340,42 +345,42 @@ if __name__ == '__main__':
     api_key = '795d705fb638507c9b2295c89cc64ee88108'
 
     exp_refseq = [ # Accessions that have been experimentally verified.
-        'NC_000964', 'NC_002947', 'NC_003272', 'NC_003869', 'NC_003888', 'NC_005090', 'NC_006461', 'NC_007633', 'NC_000913', 'NC_003047',
+        'NC_000964', 'NC_002947', 'NC_003272', 'NC_003869', 'NC_005090', 'NC_006461', 'NC_007633', 'NC_000913', 'NC_003047',
         'NC_007604', 'NC_000962', 'NC_002696', 'NC_002971', 'NC_005363', 'NC_008255', 'NC_009850', 'NC_010546', 'NC_010547', 'NC_011916'
     ]
 
     worst_exp_refseq = ['NC_007604', 'NC_010546', 'NC_002971', 'NC_000117']
 
     # For testing a small folder
-    for acc in exp_refseq:
-        properties = find_oriCs(accession=acc, email=email, api_key=api_key)
+    # for acc in exp_refseq:
+    #     properties = find_oriCs(accession=acc, email=email, api_key=api_key)
 
-        name    = properties['name']
-        Z_curve = properties['z_curve']
-        GC_skew = properties['gc_skew']
+    #     name    = properties['name']
+    #     Z_curve = properties['z_curve']
+    #     GC_skew = properties['gc_skew']
 
-        print(name, properties['oriC_middles'][0])
-        # print(name, properties['seq_size'], 'bp \n')
-        # print('QoP  :', properties['occurances'], properties['false_order'])
-        # print('oriCs:', properties['oriC_middles'], '\n')
+    #     print(name, properties['oriC_middles'][0])
+    #     # print(name, properties['seq_size'], 'bp \n')
+    #     # print('QoP  :', properties['occurances'], properties['false_order'])
+    #     # print('oriCs:', properties['oriC_middles'], '\n')
 
-        pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
-        # pf.plot_skew(GC_skew, [preferred_properties['oriC_middles']], name)
-        # pf.plot_Z_curve_3D(Z_curve, name)
+    #     pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
+    #     # pf.plot_skew(GC_skew, [preferred_properties['oriC_middles']], name)
+    #     # pf.plot_Z_curve_3D(Z_curve, name)
 
     # For Testing single files
-    # properties = find_oriCs(accession='NC_000913', email=email, api_key=api_key)
-    # name    = properties['name']
-    # Z_curve = properties['z_curve']
-    # GC_skew = properties['gc_skew']
 
-    # print(name)
-    # print('QoP  :', properties['occurances'], properties['false_order'])
-    # print('oriCs:', properties['oriC_middles'])
-    # all_pos = []
-    # for pos in properties['kmers'].values():
-    #     all_pos.extend(pos)
-    # # plt.hist( all_pos, bins=[x for x in range( 0, max(all_pos), 2000 )] )
-    # pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew] + [Z_curve[-1]], [properties['oriC_middles']]*3 + [all_pos], name)
-    # # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
-    # # pf.plot_Z_curve_3D(Z_curve, name)
+    # NC_016609: good example of 'harder' sequence. Can't just look for global extremes
+    properties = find_oriCs(accession='NC_016609', email=email, api_key=api_key)
+    name    = properties['name']
+    Z_curve = properties['z_curve']
+    GC_skew = properties['gc_skew']
+
+    print(name)
+    print('Len  :', properties['seq_size'])
+    print('QoP  :', properties['occurances'], properties['false_order'])
+    print('oriCs:', properties['oriC_middles'])
+
+    pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, ['$x_n$', '$y_n$', '$g_n$'])
+    # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
+    # pf.plot_Z_curve_3D(Z_curve, name)
