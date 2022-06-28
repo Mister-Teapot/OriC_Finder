@@ -15,15 +15,25 @@ def plot_Z_curve_3D(Z_curve, name):
     plt.show()
 
 
-def plot_Z_curve_2D(y_val_list, peaks, name):
+def plot_Z_curve_2D(y_val_list, peaks, labels, name=None):
     """
     Plots 2D Z-curve. Can display up to 4 y-axes in a single figure.
         y_val_list : list of lists with y-axis values
         peaks      : list of lists with indeces of peaks for arrays in y_val_list
         name       : used in plot title
     """
+    x_len = str(len(y_val_list[0]))
+    if int(x_len[1]) <= 4:
+        x_max = x_len[0] + str(int(x_len[1])+(5-int(x_len[1]))) + '0'*len(x_len[2:])
+    else:
+        x_max = str(int(x_len[0])+1) + '0'*len(x_len[1:])
+    thing = int(x_max)//1000
+    xthing = thing * 100
+    ything = thing*2
+
     color_list = ['r', 'b', 'g', 'c']
-    fig = plt.figure(figsize=(7,5), tight_layout=True)
+    fig = plt.figure(figsize=(8,4))
+    fig.subplots_adjust(right=0.75, bottom=0.25)
     base_ax = plt.axes()
     ax_list = [base_ax] + [base_ax.twinx() for i in range(len(y_val_list) - 1)]
 
@@ -32,13 +42,63 @@ def plot_Z_curve_2D(y_val_list, peaks, name):
         axis.spines.right.set_position(("axes", offset))
         offset += 0.2
 
+    good = False
+    while not good:
+        yticks_len = 0
+        for i, ax in enumerate(y_val_list):
+            ubound, lbound = ything * round(max(ax)/ything), ything * round(min(ax)/ything)
+            upper = ubound if max(ax) <= ubound else ubound + ything
+            lower = lbound if min(ax) >= lbound else lbound - ything
+            if len([x for x in range(lower, upper+ything, ything)]) > yticks_len:
+                yticks_len = len([x for x in range(lower, upper+ything, ything)])
+        if yticks_len < 6:
+            yticks_len *= 2
+            ything = ything // 2
+        else:
+            good = True
+            break
+
+    handle_list = []
     for i, ax in enumerate(y_val_list):
         peaks_y = np.asarray([ax[j] for j in peaks[i]]) # y refers to the y-axis coordinates, not the y-curve
-        ax_list[i].plot(range(len(ax)), ax, color_list[i], zorder=1)
-        ax_list[i].scatter(peaks[i], peaks_y, marker='X', c='k', zorder=2)
+        ax_list[i].plot(range(len(ax)), ax, color=color_list[i], zorder=2, label=labels[i])
+        ax_list[i].scatter(peaks[i], peaks_y, marker='o', c='k', zorder=3, label='$\it{oriC}$')
         ax_list[i].tick_params(axis ='y', colors=color_list[i])
+        ax_list[i].ticklabel_format(axis='y', style='sci', useMathText=True)
 
-    base_ax.set_title(f'2D Z-Curve: {name}', fontsize=10,loc='center', pad=20)
+        lbound = ything * round(min(ax)/ything)
+        lower = lbound if min(ax) >= lbound else lbound - ything
+        yticks = [lower + ything*j for j in range(yticks_len)]
+        ax_list[i].set_yticks(yticks)
+        ax_list[i].set_ylim(min(yticks), max(yticks))
+
+        h, _ = ax_list[i].get_legend_handles_labels()
+        handle_list.extend(h[:-1])
+        oriC_handle = h[-1]
+    handle_list.append(oriC_handle)
+
+    if name is not None:
+        base_ax.set_title(f'2D Z-Curve: {name}', fontsize=10,loc='center', pad=20)
+
+    ubound= xthing * round(len(ax)/xthing)
+    upper = ubound if len(ax) <= ubound else ubound + xthing
+    xticks = [x for x in range(0, upper+xthing, xthing)]
+    base_ax.set_xticks(xticks)
+
+    base_ax.ticklabel_format(axis='x', style='sci', scilimits=(3,3), useMathText=True)
+    base_ax.set_xlabel('Sequence length (bp)')
+    base_ax.set_xlim(min(xticks), max(xticks))
+    base_ax.grid(True, which='major', zorder=1)
+
+    plt.legend(
+        handles=handle_list,
+        labels=labels + ['$\it{oriC}$'],
+        bbox_to_anchor=(0.12, -0.35, 0.75, .102),
+        loc='center',
+        ncol=len(y_val_list)+1,
+        mode="expand",
+        borderaxespad=0.
+    )
     plt.show()
 
 
@@ -61,3 +121,6 @@ def distance_histogram(db, log=False):
     plt.show()
     plt.hist(db['Distance_pc'], bins=[x for x in range(0, 50, 1)], log=log)
     plt.show()
+
+if __name__ == '__main__':
+    plot_Z_curve_2D([[1000]*440000, [2500]*440000, [5000]*440000], [[0],[25000],[45000]], ['a', 'b', 'c'], 'test')
