@@ -320,10 +320,10 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
 
     # Final dictionary: sort based on Avg_occurances
     oriCs = [oriC.middle for oriC in sorted( rank_dict.keys(), key = lambda x:rank_dict[x][-1], reverse=True )]
-    Avg_occurances.sort( reverse=True )
-    Z_occurances.sort( key = lambda x:Avg_occurances[Z_occurances.index(x)], reverse=True )
-    G_occurances.sort( key = lambda x:Avg_occurances[G_occurances.index(x)], reverse=True )
-    D_occurances.sort( key = lambda x:Avg_occurances[D_occurances.index(x)], reverse=True )
+    Z_occurances = sorted(Z_occurances, key = lambda x:Avg_occurances[Z_occurances.index(x)], reverse=True )
+    G_occurances = sorted(G_occurances, key = lambda x:Avg_occurances[G_occurances.index(x)], reverse=True )
+    D_occurances = sorted(D_occurances, key = lambda x:Avg_occurances[D_occurances.index(x)], reverse=True )
+    Avg_occurances = sorted( Avg_occurances, reverse=True )
     finish = time.time() - start_2 + checkpoint
 
     oriC_properties = {
@@ -375,16 +375,18 @@ if __name__ == '__main__':
     # For Testing single files
 
     # NC_016609: good example of 'harder' sequence. Can't just look for global extremes
-    properties = find_oriCs(accession='NC_000913', email=email, api_key=api_key)
-    name    = properties['name']
-    Z_curve = properties['z_curve']
-    GC_skew = properties['gc_skew']
+    properties = find_oriCs(accession='NC_010546', email=email, api_key=api_key)
+    for key in properties:
+        print(key, properties[key])
+    # name    = properties['name']
+    # Z_curve = properties['z_curve']
+    # GC_skew = properties['gc_skew']
 
-    print(name)
-    print('Len  :', properties['seq_size'])
-    print('QoP  :', properties['occurances'], properties['false_order'])
-    print('oriCs:', properties['oriC_middles'])
+    # print(name)
+    # print('Len  :', properties['seq_size'])
+    # print('QoP  :', properties['occurances'], properties['false_order'])
+    # print('oriCs:', properties['oriC_middles'])
 
-    pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, ['$x_n$', '$y_n$', '$g_n$'])
+    # pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, ['$x_n$', '$y_n$', '$g_n$'])
     # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
     # pf.plot_Z_curve_3D(Z_curve, name)
