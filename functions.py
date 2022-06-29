@@ -2,7 +2,7 @@ import re
 import numpy as np
 
 from itertools import combinations, product
-from Bio import SeqIO, Entrez
+from Bio import SeqIO, Entrez, Seq
 from typing import TextIO, Union, Generator
 from urllib.error import HTTPError, URLError
 import socket
@@ -222,7 +222,7 @@ def generate_mismatched_strings(string: str, mismatches: int = 2) -> Generator:
 
 def get_dnaa_boxes(box_list: list, max_mismatches: int = 2) -> set:
     """
-    Standard parameters: Get all unique dnaa-box 9-mers that allow for 0, 1, or 2 mismatches.
+    Standard parameters: Get all unique dnaa-box 9-mers and reverse complements that allow for 0, 1, or 2 mismatches.
     Sources as comments in function.
 
     Parameters:
@@ -254,15 +254,17 @@ def get_dnaa_boxes(box_list: list, max_mismatches: int = 2) -> set:
     '''
 
     # Get all dnaa-boxes as strings
+    boxes = box_list.copy()
     for box in box_list:
         if re.search(r'[^ATCG]', box) is not None:
             raise ValueError(f'\n\tInput string: \'{box}\' contains forbidden characters. Only use the four nucleotide bases: A, T, C, and G.')
         if len(box) != 9:
             raise ValueError(f'Input string \'{box}\' not of length 9.')
-    boxes = set(box_list)
+        # Also check reverse complement for box on other strand
+        boxes.append(str(Seq.Seq(box).reverse_complement()))
 
     # Get all unique strings while allowing for max. 2 mismatches.
-    mismatch_boxes = list(boxes)
+    mismatch_boxes = list(set(boxes))
     for box in boxes:
         for i in range(abs(max_mismatches)):
             mismatch_boxes.extend(list(generate_mismatched_strings(box, i+1)))

@@ -1,6 +1,3 @@
-import re
-import numpy as np
-
 import pandas as pd
 pd.set_option('display.width', None)
 pd.set_option('display.max_colwidth', 25)
@@ -17,20 +14,6 @@ raw_oriC = pd.read_csv('tubic_bacteria.csv')
 # Remove duplicates
 raw_oriC[raw_oriC['Refseq'].duplicated(keep = False) == True]
 raw_oriC.rename(columns = {'Refseq' : 'RefSeq'}, inplace = True)
-
-###########################
-# Experimentally verified organism extraction
-exp_oriC = raw_oriC[['doricAC', 'RefSeq']].copy()
-exp_oriC['RefSeq'] = exp_oriC['RefSeq'].str.extract(r'([^.]*)')
-DoriC_tags = []
-with open('Experimental_oriC.txt', 'r') as fh:
-    for line in fh:
-        DoriC_tags.append(line.strip())
-# Convert DoriC_tags to RefSeq
-
-RefSeq_tags = exp_oriC.loc[exp_oriC['doricAC'].isin(DoriC_tags)]['RefSeq'].unique().tolist()
-# print(RefSeq_tags) # just copy/paste the output, it's only 22 accessions
-###########################
 
 # Extract useful columns
 raw_oriC = raw_oriC[['RefSeq', 'Organism', 'Lineage', 'Location of replication genes', 'Location of replication origin', 'OriC sequence']].copy()

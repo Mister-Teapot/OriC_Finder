@@ -375,18 +375,16 @@ if __name__ == '__main__':
     # For Testing single files
 
     # NC_016609: good example of 'harder' sequence. Can't just look for global extremes
-    properties = find_oriCs(accession='NC_010546', email=email, api_key=api_key)
-    for key in properties:
-        print(key, properties[key])
-    # name    = properties['name']
-    # Z_curve = properties['z_curve']
-    # GC_skew = properties['gc_skew']
+    properties = find_oriCs(accession='NC_000913', email=email, api_key=api_key)
+    name    = properties['name']
+    Z_curve = properties['z_curve']
+    GC_skew = properties['gc_skew']
 
-    # print(name)
-    # print('Len  :', properties['seq_size'])
-    # print('QoP  :', properties['occurances'], properties['false_order'])
-    # print('oriCs:', properties['oriC_middles'])
+    print(name)
+    print('Len  :', properties['seq_size'])
+    print('QoP  :', properties['occurances'], properties['false_order'])
+    print('oriCs:', properties['oriC_middles'])
 
-    # pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, ['$x_n$', '$y_n$', '$g_n$'])
+    pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [[properties['oriC_middles'][0]]]*3, ['$x_n$', '$y_n$', '$g_n$'])
     # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
     # pf.plot_Z_curve_3D(Z_curve, name)
