@@ -228,7 +228,6 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
     #   G_oriCs: order of Z_oriCs based on proximity to genes
     #   D_oriCs: order of Z_oriCs based on number of DnaA-boxes in its 5%-window.
 
-    disp_time = False
     # Some error handling
     if genome_fasta is not None and not (genome_fasta[-5:] == 'fasta' or genome_fasta[-3:] == 'fna'):
         raise ValueError('\'genome_fasta\' does not have extension \'.fasta\' or \'.fna\'. Must be FASTA-file.')
@@ -253,8 +252,7 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
     dnaa_boxes = fc.get_dnaa_boxes(box_list=box_list, max_mismatches=int(max_mismatches))
     start_calc = time.time()
     x, y, z, gc, kmers = calc_disparities(sequence, 9, dnaa_boxes)
-    if disp_time:
-        print(f'Calc_disparities took: {time.time()-start_calc:.2f}')
+    calc_disp_time = time.time()-start_calc
 
     # Finding potential oriCs based on Z-curve
     windows = [0.01, 0.03, 0.05]
@@ -267,6 +265,7 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
         peaks.extend( [j for i in curve_combinations( (x, y, gc), (peaks_x, peaks_y, peaks_gc) ) for j in i] )
 
     ## Finding connected components in undirected graph with a depth-first search to merge Z-curve oriCs
+    # pf.plot_Z_curve_2D([x, y, gc], [[peak.middle for peak in peaks]]*3, ['$x_n$', '$y_n$', '$g_n$'])
     matrix_pot_oriCs      = fc.get_adj_mat(peaks)
     connected_groups      = fc.get_connected_groups(peaks, matrix_pot_oriCs, int(len(sequence)*windows[-1]))
     Z_oriCs, Z_occurances = merge_oriCs(len(sequence), connected_groups, window_size=int(len(sequence)*windows[-1]))
@@ -277,8 +276,8 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
     gene_handle = fc.fetch_file(_accession, email, api_key, 'fasta_cds_na') if genes_fasta is None else genes_fasta
     start_2 = time.time()
     genes_of_interest = ['dnaA', 'dnaN'] # 'gidA', 'parA', 'hemE' # not sure if these are proper yet
-    genes_dict = fc.read_gene_info(gene_handle, genes_of_interest)
-    if disp_time: print(f'Reading gene locations took: {time.time()-start_2:.2f}')
+    genes_dict, num_of_genes = fc.read_gene_info(gene_handle, genes_of_interest)
+    read_genes_time = time.time()-start_2
     del gene_handle
 
     # Gene-location analysis
@@ -324,7 +323,7 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
     G_occurances = sorted(G_occurances, key = lambda x:Avg_occurances[G_occurances.index(x)], reverse=True )
     D_occurances = sorted(D_occurances, key = lambda x:Avg_occurances[D_occurances.index(x)], reverse=True )
     Avg_occurances = sorted( Avg_occurances, reverse=True )
-    finish = time.time() - start_2 + checkpoint
+    total_time = time.time() - start_2 + checkpoint
 
     oriC_properties = {
         'name'         : _accession,
@@ -338,9 +337,10 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
         'false_order'  : false_order,
         'seq_size'     : len(sequence),
         'gc_conc'      : ( sequence.count('G') + sequence.count('C') ) / len(sequence),
-        'time_of_prediction' : finish # Excludes time used for downloading files
+        'time_of_prediction' : (calc_disp_time, read_genes_time, total_time), # Excludes time used for downloading files
+        'num_of_genes'       : num_of_genes
     }
-    if disp_time: print(f'Time to get oriCs: {finish:.2f} sec')
+    if 0: print(f'Time to get oriCs: {total_time:.2f} sec')
     return oriC_properties
 
 
@@ -375,7 +375,7 @@ if __name__ == '__main__':
     # For Testing single files
 
     # NC_016609: good example of 'harder' sequence. Can't just look for global extremes
-    properties = find_oriCs(accession='NC_000913', email=email, api_key=api_key)
+    properties = find_oriCs(accession='NC_010546', email=email, api_key=api_key)
     name    = properties['name']
     Z_curve = properties['z_curve']
     GC_skew = properties['gc_skew']
@@ -385,6 +385,6 @@ if __name__ == '__main__':
     print('QoP  :', properties['occurances'], properties['false_order'])
     print('oriCs:', properties['oriC_middles'])
 
-    pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [[properties['oriC_middles'][0]]]*3, ['$x_n$', '$y_n$', '$g_n$'])
+    pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, ['$x_n$', '$y_n$', '$g_n$'])
     # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
     # pf.plot_Z_curve_3D(Z_curve, name)

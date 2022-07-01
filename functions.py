@@ -47,7 +47,9 @@ def read_gene_info(handle: TextIO, genes_list: list) -> dict:
     obj = SeqIO.parse(handle, 'fasta')
     genes = [gene.lower() for gene in genes_list]
     genes_dict = {}
+    num_of_genes = 0
     for gene in obj:
+        num_of_genes += 1
         features = [x.split('=') for x in re.findall(r"\[(.*?)\]", gene.description) if '=' in x]
         feature_dict = {feature[0] : feature[1] for feature in features}
         try: gene_name = feature_dict.pop('gene')
@@ -56,7 +58,7 @@ def read_gene_info(handle: TextIO, genes_list: list) -> dict:
             except KeyError: continue
         if gene_name.lower() in genes:
             genes_dict.update({gene_name : feature_dict})
-    return genes_dict
+    return genes_dict, num_of_genes
 
 
 def extract_locations(seq_len: int, genes_dict: dict) -> list:
@@ -165,6 +167,30 @@ def get_adj_mat(peaks_a: list, peaks_b: list = None, seq_len: int = None) -> np.
 
 def get_connected_groups(peaks: list, adj_mat: np.ndarray, threshold: int) -> list:
     """Recursively find connected groups in an undirected graph"""
+    connected_groups_idx = _get_connected_groups_init(peaks, adj_mat, threshold)
+    accepted_groups_idx = []
+    for group_idx in connected_groups_idx:
+        flag = False
+        for i, j in combinations(group_idx, r=2):
+            if adj_mat[i][j] > threshold*3:
+                group_vals = [peaks[i] for i in group_idx]
+                group_matrix = get_adj_mat(group_vals, seq_len=200)
+                split_group_idx = _get_connected_groups_init(group_vals, group_matrix, threshold//2)
+                split_group = [[group_idx[i] for i in group] for group in split_group_idx]
+                accepted_groups_idx.extend(split_group)
+                flag = True
+                break
+        if not flag:
+            accepted_groups_idx.append(group_idx)
+        else:
+            flag = False
+            
+    connected_groups_vals = [ [peaks[i] for i in idx_group] for idx_group in accepted_groups_idx ]
+    return connected_groups_vals
+
+
+def _get_connected_groups_init(peaks: list, adj_mat: np.ndarray, threshold: int) -> list:
+    """Private: Groups initial indices of `peaks`."""
     visited = [False] * len(peaks)
     connected_groups_idx = []
     for i in range(len(peaks)):
@@ -172,12 +198,11 @@ def get_connected_groups(peaks: list, adj_mat: np.ndarray, threshold: int) -> li
             group = []
             _, _, visited, group, _ = _DFS_recurse(i, adj_mat, visited, group, threshold=threshold)
             connected_groups_idx.append(group)
-    connected_groups_vals = [ [peaks[i] for i in idx_group] for idx_group in connected_groups_idx ]
-    return connected_groups_vals
+    return connected_groups_idx
 
 
 def _DFS_recurse(idx, adj_mat, visited, connected_list, threshold):
-    """Private: used by get_connected_groups for recursion"""
+    """Private: used by _get_connected_groups_init for recursion"""
     visited[idx] = True
     connected_list.append(idx)
     for i in range(len(visited)):
@@ -187,19 +212,18 @@ def _DFS_recurse(idx, adj_mat, visited, connected_list, threshold):
             _, _, visited, connected_list, _ = _DFS_recurse(i, adj_mat,visited, connected_list, threshold)
     return idx, adj_mat, visited, connected_list, threshold
 
+# peaks = [1,2,3,4,5,7,8,9,10,11, 50,51,52, 100,101,102, 200]
+# mat = get_adj_mat(peaks, seq_len=200)
+# print(get_connected_groups(peaks, mat, threshold=2))
 
 def binary_search(arr: list, x) -> Union[int, None]:
     """Return index of `x` in `arr`. None, if `x` not in `arr`. Search done iteratively."""
     low, mid, high = 0, 0, len(arr)-1
-
     while low <= high:
         mid = (high + low) // 2
-        if arr[mid] < x:
-            low = mid + 1
-        elif arr[mid] > x:
-            high = mid - 1
-        else:
-            return mid
+        if arr[mid] < x: low = mid + 1
+        elif arr[mid] > x: high = mid - 1
+        else: return mid
     return None
 
 

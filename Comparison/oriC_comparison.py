@@ -246,8 +246,8 @@ if __name__ == '__main__':
     point_six_file_path  = 'Comparison/'+VERSION+'/comparison_info_file_0.6.txt'
 
     # Make or load csv
-    # comparator_df = make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv=comparator_csv)
-    comparator_df = pd.read_csv(comparator_csv)
+    comparator_df = make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv=comparator_csv)
+    #comparator_df = pd.read_csv(comparator_csv)
 
     steps = 100
     p_r_dict = {'min_confidence': [x for x in range(steps+1)]}
@@ -270,12 +270,20 @@ if __name__ == '__main__':
         p_r_dict[f'precision_{o[0]}'] = []
         p_r_dict[f'recall_{o[0]}'] = []
         p_r_dict[f'distance_pc_{o[0]}'] = []
-
+        print('Working on', o)
         for i in range(steps+1):
             distances, precision, recall = get_distances_precision_and_recall(comparator_df, MAX_DIST, occurance=o, use_confidence=i/steps)
             p_r_dict[f'precision_{o[0]}'].append(precision*100)
             p_r_dict[f'recall_{o[0]}'].append(recall*100)
             p_r_dict[f'distance_pc_{o[0]}'].append(distances['Distance_pc'].sum() / distances['Distance_pc'].shape[0])
+            if i == 25:
+                print('25 % done')
+            if i == 50:
+                print('50 % done')
+            if i == 75:
+                print('75 % done')
+            if i == 100:
+                print('100 % done')
     pd.DataFrame(p_r_dict).to_csv('Comparison/All_occurances_precision_recall.csv', index=False)        
 
 
