@@ -4,6 +4,7 @@ import scipy.signal as sp
 import numpy as np
 import joblib
 
+from sklearn import svm
 from itertools import combinations, product
 from typing import Union, Tuple
 
@@ -198,7 +199,7 @@ def get_occurances_box_loc_info(current_oriCs: list, kmer_dict: dict) -> list:
     return [x/sum(contains_boxes) if sum(contains_boxes) != 0 else 0 for x in contains_boxes]
 
 
-def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_boxes: list = None, max_mismatches: int = 0, accession: str = None, email: str = None, api_key: str = None) -> dict:
+def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_boxes: list = None, max_mismatches: int = 0, model: svm.SVC = None, accession: str = None, email: str = None, api_key: str = None) -> dict:
     '''
     VERSION 6\n
     Locates potential oriC on circular bacterial chromosomes based on Z-curve and GC-skew analysis and dnaa box analysis.
@@ -326,9 +327,9 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
     Avg_occurances = sorted( Avg_occurances, reverse=True )
     total_time = time.time() - start_2 + checkpoint
 
-    model = joblib.load('model.pkl')
-    prediction = model.predict(np.asarray([Z_occurances, G_occurances, D_occurances]).T).tolist()
-    print(prediction)
+    prediction = None
+    if model is not None:
+        prediction = model.predict(np.asarray([Z_occurances, G_occurances, D_occurances]).T).tolist()
 
     oriC_properties = {
         'name'         : _accession,
@@ -354,6 +355,7 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
 if __name__ == '__main__':
     email = 'zoyavanmeel@gmail.com'
     api_key = '795d705fb638507c9b2295c89cc64ee88108'
+    model = joblib.load('model.pkl')
 
     exp_refseq = [ # Accessions that have been experimentally verified.
         'NC_000964', 'NC_002947', 'NC_003272', 'NC_003869', 'NC_005090', 'NC_006461', 'NC_007633', 'NC_000913', 'NC_003047',
@@ -382,7 +384,7 @@ if __name__ == '__main__':
     # For Testing single files
 
     # NC_016609: good example of 'harder' sequence. Can't just look for global extremes
-    properties = find_oriCs(accession='NC_021985', email=email, api_key=api_key)
+    properties = find_oriCs(accession='NC_021985', email=email, api_key=api_key, model=model)
     name    = properties['name']
     Z_curve = properties['z_curve']
     GC_skew = properties['gc_skew']
