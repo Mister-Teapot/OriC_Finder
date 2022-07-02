@@ -15,7 +15,7 @@ K = 5
 def load_data(path):
     df = pd.read_csv(path)
     X = df[['Z_occurance', 'G_occurance', 'D_occurance']]
-    y = df['Correct']
+    y = df[['Correct']]
     return X, y
 
 
@@ -85,11 +85,13 @@ if __name__ == '__main__':
     }
 
     best_params = fine_tune(X, y, models, model_parameters)
-    #                                                   [name][params]
+    #                                                             [name][params]
     best_SVC_model_best, SVC_acc_best = train_model(SVC(**best_params[0][1]), X, y, K)
     best_SVC_model_def, SVC_acc_def = train_model(SVC(), X, y, K)
     best_LoR_model_best, LoR_acc_best = train_model(LogisticRegression(**best_params[1][1]), X, y, K)
     best_LoR_model_def, LoR_acc_def = train_model(LogisticRegression(), X, y, K)
+
+# [CV 3/3] END .................C=100, kernel=rbf;, score=0.944 total time=  21.8s
 
     print(f'SVC_finetune    : {SVC_acc_best:.3f}')
     print(f'SVC_default     : {SVC_acc_def:.3f}')

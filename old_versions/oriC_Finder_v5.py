@@ -2,7 +2,6 @@
 import os, warnings, time
 import scipy.signal as sp
 import numpy as np
-import joblib
 
 from itertools import combinations, product
 from typing import Union, Tuple
@@ -200,7 +199,7 @@ def get_occurances_box_loc_info(current_oriCs: list, kmer_dict: dict) -> list:
 
 def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_boxes: list = None, max_mismatches: int = 0, accession: str = None, email: str = None, api_key: str = None) -> dict:
     '''
-    VERSION 6\n
+    VERSION 5\n
     Locates potential oriC on circular bacterial chromosomes based on Z-curve and GC-skew analysis and dnaa box analysis.
     Three window_sizes are used: 1, 3 and 5 % of the total genome length. The oriCs that were found by most combinations, get used.
     The location of the DnaA and DnaN genes will be considered in the ranking of the found oriCs. The oriC closest to the genes gets promoted.
@@ -326,10 +325,6 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
     Avg_occurances = sorted( Avg_occurances, reverse=True )
     total_time = time.time() - start_2 + checkpoint
 
-    model = joblib.load('model.pkl')
-    prediction = model.predict(np.asarray([Z_occurances, G_occurances, D_occurances]).T).tolist()
-    print(prediction)
-
     oriC_properties = {
         'name'         : _accession,
         'oriC_middles' : oriCs,
@@ -337,7 +332,6 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
         'Z_occurances' : Z_occurances,
         'G_occurances' : G_occurances,
         'D_occurances' : D_occurances,
-        'Prediction'   : prediction,
         'z_curve'      : (x, y, z),
         'gc_skew'      : gc,
         'false_order'  : false_order,
@@ -346,7 +340,6 @@ def find_oriCs(genome_fasta: str = None, genes_fasta: str = None, custom_dnaa_bo
         'time_of_prediction' : (calc_disp_time, read_genes_time, total_time), # Excludes time used for downloading files
         'num_of_genes'       : num_of_genes
     }
-
     if 0: print(f'Time to get oriCs: {total_time:.2f} sec')
     return oriC_properties
 
@@ -382,7 +375,7 @@ if __name__ == '__main__':
     # For Testing single files
 
     # NC_016609: good example of 'harder' sequence. Can't just look for global extremes
-    properties = find_oriCs(accession='NC_021985', email=email, api_key=api_key)
+    properties = find_oriCs(accession='NC_010546', email=email, api_key=api_key)
     name    = properties['name']
     Z_curve = properties['z_curve']
     GC_skew = properties['gc_skew']
@@ -390,7 +383,6 @@ if __name__ == '__main__':
     print(name)
     print('Len  :', properties['seq_size'])
     print('QoP  :', properties['occurances'], properties['false_order'])
-    print('Pred :', properties['Prediction'])
     print('oriCs:', properties['oriC_middles'])
 
     pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, ['$x_n$', '$y_n$', '$g_n$'])
