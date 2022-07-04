@@ -2,9 +2,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-PRECISION = 0
-RECALL    = 0
-DISTANCE  = 1
+PRECISION   = 0
+RECALL      = 0
+DISTANCE    = 0
+PREC_VS_REC = 1
 
 df = pd.read_csv('Comparison\All_occurances_precision_recall.csv')
 
@@ -52,13 +53,25 @@ if DISTANCE:
     ax.set_yticks([x for x in range(0, 21)])
     ax.set_ylim(0, 20)
 
+if PREC_VS_REC:
+    p1_1 = ax.scatter(y_recall[0], y_precision[0], label='Avg')
+    p1_2 = ax.scatter([86.52], [83.95], c='r', marker='x')
+    p1_3 = ax.plot([0, 45], [83.95, 83.95], 'r--')
+    p1_3 = ax.plot([45, 45], [0, 83.95], 'r--')
+    p1_3 = ax.plot([0, 86.52], [44, 44], 'r-.')
+    p1_3 = ax.plot([86.52, 86.52], [0, 44], 'r-.')
+    ax.set_yticks([x for x in range(0, 110, 10)])
+    ax.set_ylim(0, 100)
+    ax.set_xlabel("Recall (%)")
+    ax.set_ylabel("Precision (%)")
 
 ax.set_xlim(0, 100)
-ax.set_xlabel("Minimum confidence (%)")
-# ax.yaxis.label.set_color(p1_1.get_color())
 tkw = dict(size=4, width=1.5, gridOn=True)
-ax.tick_params(axis='y', colors=p1_1.get_color(), **tkw)
+ax.tick_params(axis='y', **tkw)
 ax.tick_params(axis='x', **tkw)
-ax.legend(handles=[p1_1, p1_2, p1_3, p1_4])
+if not PREC_VS_REC:
+    ax.yaxis.label.set_color(p1_1.get_color())
+    ax.set_xlabel("Minimum confidence (%)")
+    ax.legend(handles=[p1_1, p1_2, p1_3, p1_4])
 
 plt.show()

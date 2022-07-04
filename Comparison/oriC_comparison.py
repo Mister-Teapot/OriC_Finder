@@ -17,7 +17,7 @@ from peak import Peak
 import plotting_functions as pf
 
 MAX_DIST = 2.5/100
-VERSION  = 'v5'
+VERSION  = 'v6'
 
 
 def make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv):
@@ -187,9 +187,11 @@ def compare_dbs(df=None, csv=None, info_file_path=None, print_info=False, max_di
     return pd.DataFrame(all_distances)
 
 
-def get_distances_precision_and_recall(df, max_dist, occurance, use_confidence=None):
+def get_distances_precision_and_recall(df, max_dist, occurance=None, use_confidence=None, use_SVC_pred=False):
     '''Uses top oriC of prediction to compare to DoriC. Only takes max_dist as fraction of genome length.'''
     # occurance must be in ['Avg_Occurance', 'Z_Occurance', 'G_Occurance', 'D_Occurance']
+    if occurance is None and not use_SVC_pred:
+        raise ValueError('use occurence or SVC prediction')
     TP, TN, FP, FN = 0, 0, 0, 0
 
     all_distances = {
@@ -207,8 +209,19 @@ def get_distances_precision_and_recall(df, max_dist, occurance, use_confidence=N
         D_oriC_cols = sorted( [i for i in sample.axes[0] if 'DoriC_oriC' in i], key=lambda x:x[-1] )
         D_oriC_middles = [ Peak.get_middle( int( literal_eval(sample[D_oriC_col])[0] ), int( literal_eval(sample[D_oriC_col])[1] ), seq_len ) for D_oriC_col in D_oriC_cols ]
 
-        Z_oriC_to_use = np.asarray([i for i in sample.axes[0] if occurance in i]).argmax()
-        Z_oriC_middle = int(sample[f'oriC_middles_{Z_oriC_to_use}']) if use_confidence is None or sample[f'{occurance}_oriC_{Z_oriC_to_use}'] >= use_confidence else None
+        if use_SVC_pred:
+            Z_oriCs_SVC = [i for i in sample.axes[0] if 'Prediction_oriC_' in i]
+            Z_oriC_cols_to_use = [f'oriC_middles_{i}' for i in range(len(Z_oriCs_SVC)) if sample[Z_oriCs_SVC[i]]]
+            if len(Z_oriC_cols_to_use) == 0:
+                Z_oriC_middle = None
+            elif len(Z_oriC_cols_to_use) > 1:
+                Z_oriC_to_use = max([col[-1] for col in Z_oriC_cols_to_use], key = lambda x:sample[f'Avg_Occurance_oriC_{x}'])
+                Z_oriC_middle = int(sample[f'oriC_middles_{Z_oriC_to_use}'])
+            else:
+                Z_oriC_middle = int(sample[Z_oriC_cols_to_use[0]])
+        else:
+            Z_oriC_to_use = np.asarray([i for i in sample.axes[0] if occurance in i]).argmax()
+            Z_oriC_middle = int(sample[f'oriC_middles_{Z_oriC_to_use}']) if use_confidence is None or sample[f'{occurance}_oriC_{Z_oriC_to_use}'] >= use_confidence else None
 
         if Z_oriC_middle is None:
             FN += len(D_oriC_middles)
@@ -246,8 +259,13 @@ if __name__ == '__main__':
     point_six_file_path  = 'Comparison/'+VERSION+'/comparison_info_file_0.6.txt'
 
     # Make or load csv
-    comparator_df = make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv=comparator_csv)
-    #comparator_df = pd.read_csv(comparator_csv)
+    #comparator_df = make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv=comparator_csv)
+    comparator_df = pd.read_csv(comparator_csv)
+
+    dists, precision, recall = get_distances_precision_and_recall(df=comparator_df, max_dist=MAX_DIST, use_SVC_pred=True)
+    # print('Avg dist off:', sum(dists)/len(dists))
+    print('Precision   :', precision)
+    print('Recall      :', recall)
 
     steps = 100
     p_r_dict = {'min_confidence': [x for x in range(steps+1)]}
@@ -265,26 +283,26 @@ if __name__ == '__main__':
     #         p_r_dict[f'distance_pc_{v}'].append(distances['Distance_pc'].sum() / distances['Distance_pc'].shape[0])
     # pd.DataFrame(p_r_dict).to_csv('Comparison/version_3_4_5_precision_recall.csv', index=False)
 
-    # Comparison against other occurances (within V5)
-    for o in ['Avg_Occurance', 'Z_Occurance', 'G_Occurance', 'D_Occurance']:
-        p_r_dict[f'precision_{o[0]}'] = []
-        p_r_dict[f'recall_{o[0]}'] = []
-        p_r_dict[f'distance_pc_{o[0]}'] = []
-        print('Working on', o)
-        for i in range(steps+1):
-            distances, precision, recall = get_distances_precision_and_recall(comparator_df, MAX_DIST, occurance=o, use_confidence=i/steps)
-            p_r_dict[f'precision_{o[0]}'].append(precision*100)
-            p_r_dict[f'recall_{o[0]}'].append(recall*100)
-            p_r_dict[f'distance_pc_{o[0]}'].append(distances['Distance_pc'].sum() / distances['Distance_pc'].shape[0])
-            if i == 25:
-                print('25 % done')
-            if i == 50:
-                print('50 % done')
-            if i == 75:
-                print('75 % done')
-            if i == 100:
-                print('100 % done')
-    pd.DataFrame(p_r_dict).to_csv('Comparison/All_occurances_precision_recall.csv', index=False)        
+    # # Comparison against other occurances (within V5)
+    # for o in ['Avg_Occurance', 'Z_Occurance', 'G_Occurance', 'D_Occurance']:
+    #     p_r_dict[f'precision_{o[0]}'] = []
+    #     p_r_dict[f'recall_{o[0]}'] = []
+    #     p_r_dict[f'distance_pc_{o[0]}'] = []
+    #     print('Working on', o)
+    #     for i in range(steps+1):
+    #         distances, precision, recall = get_distances_precision_and_recall(comparator_df, MAX_DIST, occurance=o, use_confidence=i/steps)
+    #         p_r_dict[f'precision_{o[0]}'].append(precision*100)
+    #         p_r_dict[f'recall_{o[0]}'].append(recall*100)
+    #         p_r_dict[f'distance_pc_{o[0]}'].append(distances['Distance_pc'].sum() / distances['Distance_pc'].shape[0])
+    #         if i == 25:
+    #             print('25 % done')
+    #         if i == 50:
+    #             print('50 % done')
+    #         if i == 75:
+    #             print('75 % done')
+    #         if i == 100:
+    #             print('100 % done')
+    # pd.DataFrame(p_r_dict).to_csv('Comparison/All_occurances_precision_recall.csv', index=False)        
 
 
 

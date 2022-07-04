@@ -1,4 +1,4 @@
-,RefSeq_oriC,Z_occurance,G_occurance,D_occurance,Correct
+Index,RefSeq_oriC,Z_occurance,G_occurance,D_occurance,Correct
 0,NC_000908_0,0.5,0.995397944484459,0.0,True
 1,NC_000908_1,0.2222222222222222,0.2568944262840047,0.0,False
 2,NC_000908_2,0.0555555555555555,0.6581043271095351,0.0,False

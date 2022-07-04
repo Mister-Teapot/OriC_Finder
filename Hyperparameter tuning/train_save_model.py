@@ -1,25 +1,23 @@
 import pandas as pd
+import numpy as np
 from sklearn.svm import SVC
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
 import joblib
 
-df = pd.read_csv('Hyperparameter tuning/tuning.csv')
+all_samples_df = pd.read_csv('Hyperparameter tuning/tuning.csv')
+all_refseqs_df = pd.read_csv('DoriC data prep/DoriC_oriC_concat_entries.csv')['RefSeq']
+
+train_refseqs = all_refseqs_df.sample(frac = 0.75, random_state=42)
+test_refseqs = all_refseqs_df.drop(train_refseqs.index)
+
+train_samples_refseqs = []
+for i, sample in all_samples_df.iterrows():
+    if sample['RefSeq_oriC'][:-2] not in test_refseqs:
+        train_samples_refseqs.append(sample['RefSeq_oriC'])
 
 # .to_numpy() to get rid of feature name warning
-X = df[['Z_occurance', 'G_occurance', 'D_occurance']].to_numpy()
-y = df['Correct'].to_numpy()
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.7, random_state=42)
+X_train = all_samples_df[all_samples_df['RefSeq_oriC'].isin(train_samples_refseqs)][['Z_occurance', 'D_occurance']].to_numpy()
+y_train = all_samples_df[all_samples_df['RefSeq_oriC'].isin(train_samples_refseqs)]['Correct'].to_numpy()
 
 model = SVC(C=500, kernel='rbf', random_state=42).fit(X_train, y_train)
 
-y_pred_model = model.predict(X_test)
-y_pred_dummy = [False] * X_test.shape[0]
-
-print('model acc', accuracy_score(y_test, y_pred_model))
-print('dummy_F acc', accuracy_score(y_test, y_pred_dummy))
-
-use_model = SVC(C=500, kernel='rbf', random_state=42).fit(X, y)
-
-joblib.dump(use_model, 'model.pkl')
+joblib.dump(model, '75_train_model_no_G.pkl')

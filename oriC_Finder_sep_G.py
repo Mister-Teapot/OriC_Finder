@@ -343,7 +343,7 @@ def find_oriCs(
 
     decision = None
     if model is not None:
-        decision = model.decision_function(np.asarray([Z_occurances, G_occurances, D_occurances]).T).tolist()
+        decision = model.decision_function(np.asarray([Z_occurances,..., D_occurances]).T,).tolist()
 
     oriC_properties = {
         'name'         : _accession,

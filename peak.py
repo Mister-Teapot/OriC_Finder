@@ -12,6 +12,10 @@ class Peak():
         self.window_size = window_size
         self.split = False
 
+        self.Z_score = 0
+        self.G_score = 0
+        self.D_score = 0
+
         five_side = self.middle - self.window_size // 2
         three_side = self.middle + self.window_size // 2
 
