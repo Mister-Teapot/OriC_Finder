@@ -181,9 +181,12 @@ def process_array(curve: np.ndarray, mode: str, window_size: int) -> list:
 def get_occurances_gene_loc_info(matrix: np.ndarray) -> list:
     '''Process the location of the genes of interest and rank the potential oriCs based on how close they are to these genes'''
     if np.min(matrix) == np.max(matrix):
-        return [1] * matrix.shape[1]
-    norm_mat = (matrix - np.min(matrix)) / (np.max(matrix) - np.min(matrix))
-    return [1 - x for x in np.mean(norm_mat, axis=1)]
+        return [[1]] * matrix.shape[1]
+    All_G_occurances = []
+    for col in range(matrix.shape[1]):
+        G = (matrix[:,col] - np.min(matrix[:,col])) / (np.max(matrix[:,col]) - np.min(matrix[:,col]))
+        All_G_occurances.append(G.tolist())
+    return All_G_occurances
 
 
 def get_occurances_box_loc_info(current_oriCs: list, kmer_dict: dict) -> list:
@@ -304,10 +307,11 @@ def find_oriCs(
         gene_locations = fc.extract_locations(seq_len, genes_dict)
         if gene_locations is None: return None
         matrix_oriCs_genes = fc.get_adj_mat(Z_oriCs, gene_locations)
-        G_occurances = get_occurances_gene_loc_info(matrix_oriCs_genes)
+        G_dnaA_occurances, G_dnaN_occurances = get_occurances_gene_loc_info(matrix_oriCs_genes)
     else:
         warnings.warn(f'\n\n\tAccession: {_accession}. None of the genes of interest were found in the \'genes_fasta\': {genes_of_interest}\n\tWill not use gene locations in prediction.\n')
-        G_occurances = [0] * len(Z_oriCs)
+        G_dnaA_occurances = [0] * len(Z_oriCs)
+        G_dnaN_occurances = [0] * len(Z_oriCs)
 
     # DnaA-box analysis
     if len(kmers.keys()) != 0:
@@ -318,7 +322,8 @@ def find_oriCs(
 
     Avg_occurances = []
     for i, key in enumerate(rank_dict.keys()):
-        rank_dict[key].append(G_occurances[i])
+        rank_dict[key].append(G_dnaA_occurances[i])
+        rank_dict[key].append(G_dnaN_occurances[i])
         rank_dict[key].append(D_occurances[i])
         avg = sum(rank_dict[key])/len(rank_dict[key])
         rank_dict[key].append(avg)
@@ -336,21 +341,23 @@ def find_oriCs(
     # Final dictionary: sort based on Avg_occurances
     oriCs = [oriC.middle for oriC in sorted( rank_dict.keys(), key = lambda x:rank_dict[x][-1], reverse=True )]
     Z_occurances = sorted(Z_occurances, key = lambda x:Avg_occurances[Z_occurances.index(x)], reverse=True )
-    G_occurances = sorted(G_occurances, key = lambda x:Avg_occurances[G_occurances.index(x)], reverse=True )
+    G_dnaA_occurances = sorted(G_dnaA_occurances, key = lambda x:Avg_occurances[G_dnaA_occurances.index(x)], reverse=True )
+    G_dnaN_occurances = sorted(G_dnaN_occurances, key = lambda x:Avg_occurances[G_dnaN_occurances.index(x)], reverse=True )
     D_occurances = sorted(D_occurances, key = lambda x:Avg_occurances[D_occurances.index(x)], reverse=True )
     Avg_occurances = sorted( Avg_occurances, reverse=True )
     total_time = time.time() - start_2 + checkpoint
 
     decision = None
     if model is not None:
-        decision = model.decision_function(np.asarray([Z_occurances,..., D_occurances]).T,).tolist()
+        decision = model.decision_function(np.asarray([Z_occurances,G_dnaA_occurances, G_dnaN_occurances, D_occurances]).T,).tolist()
 
     oriC_properties = {
         'name'         : _accession,
         'oriC_middles' : oriCs,
         'occurances'   : Avg_occurances,
         'Z_occurances' : Z_occurances,
-        'G_occurances' : G_occurances,
+        'G_A_occurances' : G_dnaA_occurances,
+        'G_N_occurances' : G_dnaN_occurances,
         'D_occurances' : D_occurances,
         'Prediction'   : decision,
         'z_curve'      : (x, y, z),
@@ -397,14 +404,14 @@ if __name__ == '__main__':
     # For Testing single files
 
     # NC_016609: good example of 'harder' sequence. Can't just look for global extremes
-    properties = find_oriCs(accession='NC_021985', email=email, api_key=api_key, model=model)
+    properties = find_oriCs(accession='NC_021985', email=email, api_key=api_key, model=None)
     name    = properties['name']
     Z_curve = properties['z_curve']
     GC_skew = properties['gc_skew']
 
     print(name)
     print('Len  :', properties['seq_size'])
-    print('QoP  :', properties['occurances'], properties['false_order'])
+    print('QoP  :', properties['occurances'])
     print('Pred :', properties['Prediction'])
     print('oriCs:', properties['oriC_middles'])
 
