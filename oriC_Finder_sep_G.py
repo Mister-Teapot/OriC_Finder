@@ -182,7 +182,6 @@ def get_occurances_gene_loc_info(matrix: np.ndarray) -> list:
     '''Process the location of the genes of interest and rank the potential oriCs based on how close they are to these genes'''
     All_G_occurances = []
     for col in range(matrix.shape[1]):
-        print(col)
         if np.max(matrix[:,col]) == np.min(matrix[:,col]):
             G = np.asarray([1])
         else:
