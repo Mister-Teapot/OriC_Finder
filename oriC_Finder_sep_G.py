@@ -180,10 +180,6 @@ def process_array(curve: np.ndarray, mode: str, window_size: int) -> list:
 
 def get_occurances_gene_loc_info(matrix: np.ndarray) -> list:
     '''Process the location of the genes of interest and rank the potential oriCs based on how close they are to these genes'''
-    flag = True if matrix.shape[1] == 1 else False
-    if np.min(matrix) == np.max(matrix):
-        if not flag: return [[1]] * matrix.shape[1]
-        else: return [[1], [0]]
     All_G_occurances = []
     for col in range(matrix.shape[1]):
         if np.max(matrix[:,col]) == np.min(matrix[:,col]):
