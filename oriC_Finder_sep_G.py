@@ -301,7 +301,6 @@ def find_oriCs(
     start_2 = time.time()
     genes_of_interest = ['dnaA', 'dnaN'] # 'gidA', 'parA', 'hemE' # not sure if these are proper yet
     genes_dict, num_of_genes = fc.read_gene_info(gene_handle, genes_of_interest)
-    print(genes_dict)
     read_genes_time = time.time()-start_2
     del gene_handle
 
