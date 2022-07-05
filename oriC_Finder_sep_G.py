@@ -192,7 +192,7 @@ def get_occurances_gene_loc_info(matrix: np.ndarray) -> list:
             G = (matrix[:,col] - np.min(matrix[:,col])) / (np.max(matrix[:,col]) - np.min(matrix[:,col]))
         All_G_occurances.append(G.tolist())
     if len(All_G_occurances) == 2: return All_G_occurances
-    else: return All_G_occurances + [[0]]
+    else: return All_G_occurances + [[0] * len(matrix.shape[0])]
 
 
 def get_occurances_box_loc_info(current_oriCs: list, kmer_dict: dict) -> list:
