@@ -182,6 +182,7 @@ def get_occurances_gene_loc_info(matrix: np.ndarray) -> list:
     '''Process the location of the genes of interest and rank the potential oriCs based on how close they are to these genes'''
     All_G_occurances = []
     for col in range(matrix.shape[1]):
+        print(col)
         if np.max(matrix[:,col]) == np.min(matrix[:,col]):
             G = np.asarray([1])
         else:
@@ -305,13 +306,13 @@ def find_oriCs(
     del gene_handle
 
     # Gene-location analysis
-    if len(genes_dict.keys()) != 0:
+    if 2 >= len(genes_dict.keys()) > 0:
         gene_locations = fc.extract_locations(seq_len, genes_dict)
         if gene_locations is None: return None
         matrix_oriCs_genes = fc.get_adj_mat(Z_oriCs, gene_locations)
         G_dnaA_occurances, G_dnaN_occurances = get_occurances_gene_loc_info(matrix_oriCs_genes)
     else:
-        warnings.warn(f'\n\n\tAccession: {_accession}. None of the genes of interest were found in the \'genes_fasta\': {genes_of_interest}\n\tWill not use gene locations in prediction.\n')
+        warnings.warn(f'\n\n\tAccession: {_accession}. None of the genes of interest were found in the \'genes_fasta\': {genes_of_interest}\n\tWill not use gene locations in prediction.\n Gene dict contained {len(genes_dict.keys())} genes')
         G_dnaA_occurances = [0] * len(Z_oriCs)
         G_dnaN_occurances = [0] * len(Z_oriCs)
 
@@ -406,7 +407,7 @@ if __name__ == '__main__':
     # For Testing single files
 
     # NC_016609: good example of 'harder' sequence. Can't just look for global extremes
-    properties = find_oriCs(accession='NC_021985', email=email, api_key=api_key, model=None)
+    properties = find_oriCs(accession='NC_000913', email=email, api_key=api_key, model=None)
     name    = properties['name']
     Z_curve = properties['z_curve']
     GC_skew = properties['gc_skew']
