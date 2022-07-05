@@ -247,28 +247,87 @@ def get_distances_precision_and_recall(df, max_dist, occurance=None, use_confide
     return pd.DataFrame(all_distances), precision, recall
 
 
+def get_distances_precision_and_recall_prediction_by_numbers(df, max_dist, confidence=0):
+    '''Uses top oriC of prediction to compare to DoriC. Only takes max_dist as fraction of genome length.'''
+    # occurance must be in ['Avg_Occurance', 'Z_Occurance', 'G_Occurance', 'D_Occurance']
+    TP, TN, FP, FN = 0, 0, 0, 0
+
+    all_distances = {
+        'RefSeq'     : [],
+        'D_idx'      : [],
+        'Distance_bp': [],
+        'Distance_pc': []
+    }
+
+    for i, sample_original in df.iterrows():
+        sample = sample_original.copy()
+        sample.dropna(inplace=True)
+        seq_len = sample['Sequence_length']
+
+        D_oriC_cols = sorted( [i for i in sample.axes[0] if 'DoriC_oriC' in i], key=lambda x:x[-1] )
+        D_oriC_middles = [ Peak.get_middle( int( literal_eval(sample[D_oriC_col])[0] ), int( literal_eval(sample[D_oriC_col])[1] ), seq_len ) for D_oriC_col in D_oriC_cols ]
+
+        predictions = sample[[i for i in sample.axes[0] if 'Prediction_oriC_' in i]].reset_index(drop=True).convert_dtypes()
+        Z_oriCs = [int(x) for i, x in enumerate(sample[[f'oriC_middles_{j}' for j in range(len(predictions))]]) if i == predictions.argmax() and predictions.max() > confidence]
+        # print(Z_oriCs)
+        if len(Z_oriCs) == 0:
+            FN += len(D_oriC_middles)
+        else:
+            window_size = int(seq_len * max_dist)
+            for i in range(len(D_oriC_middles)):
+                D_oriC_middles[i] = Peak(D_oriC_middles[i], seq_len, window_size)
+            Z_oriC = Peak(Z_oriCs[0], seq_len, window_size)
+
+            for i, D_oriC in enumerate(D_oriC_middles):
+                distance_basepair = Peak.calc_dist(D_oriC.middle, Z_oriC.middle, seq_len)
+                distance_percent  = int( 100 * Peak.calc_dist(D_oriC.middle, Z_oriC.middle, seq_len)/seq_len )
+
+                if distance_percent <= max_dist: TP += 1
+                else: FP += 1
+
+                all_distances['RefSeq'].append(sample['RefSeq'])
+                all_distances['D_idx'].append(i)
+                all_distances['Distance_bp'].append(distance_basepair)
+                all_distances['Distance_pc'].append(distance_percent)
+    precision = TP / (TP + FP) if TP + FP != 0 else 0
+    recall = TP / (TP + FN) if TP + FN != 0 else 0
+    return pd.DataFrame(all_distances), precision, recall
+
+
 if __name__ == '__main__':
     # Input paths
-    Z_curve_csv = 'NCBI data prep/oriC_predictions_'+VERSION+'_csvs/Predicted_DoriC_accessions.csv'#Predicted_4k.csv'
+    Z_curve_csv = 'NCBI data prep/oriC_predictions_'+VERSION+'_csvs/Predicted_DoriC_accessions_no_G.csv'
     DoriC_csv   = 'DoriC data prep/DoriC_oriC_concat_entries.csv'
 
     # Output paths
-    comparator_csv = 'Comparison/'+VERSION+'/in_both_sets_all.csv'
+    comparator_csv = 'Comparison/'+VERSION+'/in_both_sets_no_G.csv'
     all_file_path  = 'Comparison/'+VERSION+'/comparison_info_file_all.txt'
     exp_file_path  = 'Comparison/'+VERSION+'/comparison_info_file_experimental.txt'
-    point_six_file_path  = 'Comparison/'+VERSION+'/comparison_info_file_0.6.txt'
 
     # Make or load csv
-    #comparator_df = make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv=comparator_csv)
-    comparator_df = pd.read_csv(comparator_csv)
+    # comparator_df = make_comparator_csv(Z_curve_csv, DoriC_csv, comparator_csv=comparator_csv)
+    # comparator_df = pd.read_csv(comparator_csv)
 
-    dists, precision, recall = get_distances_precision_and_recall(df=comparator_df, max_dist=MAX_DIST, use_SVC_pred=True)
+    # dists, precision, recall = get_distances_precision_and_recall_prediction_by_numbers(df=comparator_df, max_dist=MAX_DIST)
     # print('Avg dist off:', sum(dists)/len(dists))
-    print('Precision   :', precision)
-    print('Recall      :', recall)
+    # print('Precision   :', precision)
+    # print('Recall      :', recall)
 
     steps = 100
-    p_r_dict = {'min_confidence': [x for x in range(steps+1)]}
+    p_r_dict = {'min_confidence': [x/10 for x in range(-30, 41)]}
+
+    for v in ['standard', 'no_G']:
+        p_r_dict[f'precision_{v}'] = []
+        p_r_dict[f'recall_{v}'] = []
+        p_r_dict[f'distance_pc_{v}'] = []
+        comparator_df = pd.read_csv(f'Comparison/v6/in_both_sets_{v}.csv')
+        for i in range(-30, 41):
+            dists, precision, recall = get_distances_precision_and_recall_prediction_by_numbers(df=comparator_df, max_dist=MAX_DIST, confidence=i/10)
+            p_r_dict[f'precision_{v}'].append(precision*100)
+            p_r_dict[f'recall_{v}'].append(recall*100)
+            p_r_dict[f'distance_pc_{v}'].append(dists['Distance_pc'].sum() / dists['Distance_pc'].shape[0])
+    pd.DataFrame(p_r_dict).to_csv('Comparison/precision_recall_standard_no_G.csv', index=False)
+    
 
     # # Comparison against other versions
     # for v in ['v3', 'v4', 'v5']:

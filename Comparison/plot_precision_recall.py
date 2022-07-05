@@ -8,6 +8,7 @@ DISTANCE    = 0
 PREC_VS_REC = 1
 
 df = pd.read_csv('Comparison\All_occurances_precision_recall.csv')
+df_ml = pd.read_csv('Comparison\precision_recall_standard_no_G.csv')
 
 x = df['min_confidence']
 y_names = ['Precision (%)', 'Recall (%)', 'Distance off (%)']

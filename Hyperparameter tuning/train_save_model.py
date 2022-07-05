@@ -8,7 +8,6 @@ all_refseqs_df = pd.read_csv('DoriC data prep/DoriC_oriC_concat_entries.csv')['R
 
 train_refseqs = all_refseqs_df.sample(frac = 0.75, random_state=42)
 test_refseqs = all_refseqs_df.drop(train_refseqs.index)
-
 train_samples_refseqs = []
 for i, sample in all_samples_df.iterrows():
     if sample['RefSeq_oriC'][:-2] not in test_refseqs:
