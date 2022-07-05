@@ -185,7 +185,7 @@ def get_occurances_gene_loc_info(matrix: np.ndarray) -> list:
     All_G_occurances = []
     for col in range(matrix.shape[1]):
         if np.max(matrix[:,col]) == np.min(matrix[:,col]):
-            G = [1]
+            G = np.asarray([1])
         else:
             G = (matrix[:,col] - np.min(matrix[:,col])) / (np.max(matrix[:,col]) - np.min(matrix[:,col]))
         All_G_occurances.append(G.tolist())
