@@ -301,6 +301,7 @@ def find_oriCs(
     start_2 = time.time()
     genes_of_interest = ['dnaA', 'dnaN'] # 'gidA', 'parA', 'hemE' # not sure if these are proper yet
     genes_dict, num_of_genes = fc.read_gene_info(gene_handle, genes_of_interest)
+    print(genes_dict)
     read_genes_time = time.time()-start_2
     del gene_handle
 
@@ -406,7 +407,7 @@ if __name__ == '__main__':
     # For Testing single files
 
     # NC_016609: good example of 'harder' sequence. Can't just look for global extremes
-    properties = find_oriCs(accession='NC_000913', email=email, api_key=api_key, model=None)
+    properties = find_oriCs(accession='NZ_CP016406', email=email, api_key=api_key, model=None)
     name    = properties['name']
     Z_curve = properties['z_curve']
     GC_skew = properties['gc_skew']

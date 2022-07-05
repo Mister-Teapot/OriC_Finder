@@ -53,9 +53,7 @@ def read_gene_info(handle: TextIO, genes_list: list) -> dict:
         features = [x.split('=') for x in re.findall(r"\[(.*?)\]", gene.description) if '=' in x]
         feature_dict = {feature[0] : feature[1] for feature in features}
         try: gene_name = feature_dict.pop('gene')
-        except KeyError:
-            try: gene_name = feature_dict['protein'].split(' ')[0]
-            except KeyError: continue
+        except KeyError: continue # be careful about trying to get an alternative name
         if gene_name.lower() in genes:
             genes_dict.update({gene_name : feature_dict})
     return genes_dict, num_of_genes
