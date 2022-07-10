@@ -18,8 +18,7 @@ def connected_to_internet() -> bool:
         with socket.create_connection((host, 80), 2) as connection:
             connection.close()
         return True
-    except Exception: pass
-    return False
+    except Exception: return False
 
 
 def fetch_file(accession: str, email: str, api_key: Union[str, None], rettype: str) -> TextIO:

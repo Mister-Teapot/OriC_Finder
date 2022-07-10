@@ -15,21 +15,26 @@ import numpy as np
 from ast import literal_eval
 import math
 import sys
+import joblib
 
 sys.path.append('../OriC_Finder')
 from peak import Peak
 
-CSV_PATH = 'Comparison/v5/in_both_sets_all.csv'
-CSV_OUT  = 'Hyperparameter tuning/tuning.csv'
+CSV_PATH = 'Comparison/v6/in_both_sets_no_G.csv'
+CSV_OUT  = 'Hyperparameter tuning/tuning_hist_plot_SVC_no_G.csv'
+MODEL = joblib.load('75_train_model_no_G.pkl')
 
 def remake_comparator_df(csv_path):
     df = pd.read_csv(csv_path)
 
     new_df = {
         'RefSeq_oriC': [],
-        'Z_occurance': [],
-        'G_occurance': [],
-        'D_occurance': [],
+        # 'Z_occurance': [],
+        # 'G_A_occurance': [],
+        # 'G_N_occurance': [],
+        # 'D_occurance': [],
+        'Prediction': [],
+        # 'Avg_occurance': [],
         'Correct'    : [],
     }
 
@@ -51,10 +56,14 @@ def remake_comparator_df(csv_path):
                 if new_dist < dist:
                     dist = new_dist
             new_df['RefSeq_oriC'].append(sample['RefSeq'] + f'_{i}')
-            new_df['Z_occurance'].append(sample[f'Z_Occurance_oriC_{i}'])
-            new_df['G_occurance'].append(sample[f'G_Occurance_oriC_{i}'])
-            new_df['D_occurance'].append(sample[f'D_Occurance_oriC_{i}'])
+            # new_df['Z_occurance'].append(sample[f'Z_Occurance_oriC_{i}'])
+            # new_df['G_A_occurance'].append(sample[f'G_A_Occurance_oriC_{i}'])
+            # new_df['G_N_occurance'].append(sample[f'G_N_Occurance_oriC_{i}'])
+            # new_df['D_occurance'].append(sample[f'D_Occurance_oriC_{i}'])
+            # new_df['Avg_occurance'].append(sample[f'Avg_Occurance_oriC_{i}'])
             # if dist <= (seq_len / 100) * 2.5:
+            prediction = MODEL.decision_function(np.asarray([sample[f'Z_Occurance_oriC_{i}'], sample[f'D_Occurance_oriC_{i}']]).reshape(1, -1))
+            new_df['Prediction'].append(prediction[0])
             new_df['Correct'].append( dist <= (seq_len / 100) * 2.5 )
             # else:
             #     new_df['Correct'].append('false')
@@ -74,8 +83,9 @@ def polyfit(x, y, degree):
     return results
 
 if __name__ == '__main__':
-    # df = remake_comparator_df(CSV_PATH)
-    # df.to_csv(CSV_OUT)
+    df = remake_comparator_df(CSV_PATH)
+    df.to_csv(CSV_OUT, index=False)
+    raise NameError
     df = pd.read_csv(CSV_OUT)
     Z = df['Z_occurance']
     G = df['G_occurance']

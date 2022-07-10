@@ -121,6 +121,3 @@ def distance_histogram(db, log=False):
     plt.show()
     plt.hist(db['Distance_pc'], bins=[x for x in range(0, 50, 1)], log=log)
     plt.show()
-
-if __name__ == '__main__':
-    plot_Z_curve_2D([[1000]*440000, [2500]*440000, [5000]*440000], [[0],[25000],[45000]], ['a', 'b', 'c'], 'test')

@@ -1,5 +1,5 @@
 # Libraries
-import os, warnings, time
+import os, warnings, time, re
 import scipy.signal as sp
 import numpy as np
 import joblib
@@ -368,46 +368,49 @@ def find_oriCs(
 if __name__ == '__main__':
     email = 'zoyavanmeel@gmail.com'
     api_key = '795d705fb638507c9b2295c89cc64ee88108'
-    model = joblib.load('model.pkl')
+    model = joblib.load('exp_train_model.pkl')
 
     exp_refseq = [ # Accessions that have been experimentally verified.
         'NC_000964', 'NC_002947', 'NC_003272', 'NC_003869', 'NC_005090', 'NC_006461', 'NC_007633', 'NC_000913', 'NC_003047',
         'NC_007604', 'NC_000962', 'NC_002696', 'NC_002971', 'NC_005363', 'NC_008255', 'NC_009850', 'NC_010546', 'NC_010547', 'NC_011916'
     ]
 
-    worst_exp_refseq = ['NC_007604', 'NC_010546', 'NC_002971', 'NC_000117']
+    worst_exp_refseq = ['NC_003272.1', 'NC_010546.1']
 
     # For testing a small folder
-    # for acc in exp_refseq:
-    #     properties = find_oriCs(accession=acc, email=email, api_key=api_key)
+    # for acc in worst_exp_refseq:
+    #     properties = find_oriCs(accession=acc, email=email, api_key=api_key, model=model)
 
     #     name    = properties['name']
     #     Z_curve = properties['z_curve']
     #     GC_skew = properties['gc_skew']
 
-    #     print(name, properties['oriC_middles'][0])
-    #     # print(name, properties['seq_size'], 'bp \n')
-    #     # print('QoP  :', properties['occurances'], properties['false_order'])
-    #     # print('oriCs:', properties['oriC_middles'], '\n')
+    #     print(name)
+    #     print('Len  :', properties['seq_size'])
+    #     print('QoP  :', properties['occurances'])
+    #     print('Pred :', properties['Prediction'])
+    #     print('oriCs:', properties['oriC_middles'])
 
-    #     pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, name)
+    #     pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, ['$x_n$', '$y_n$', '$g_n$'], name)
     #     # pf.plot_skew(GC_skew, [preferred_properties['oriC_middles']], name)
     #     # pf.plot_Z_curve_3D(Z_curve, name)
 
     # For Testing single files
 
     # NC_016609: good example of 'harder' sequence. Can't just look for global extremes
-    properties = find_oriCs(accession='NC_021985', email=email, api_key=api_key, model=model)
+    properties = find_oriCs(accession='NC_002971', email=email, api_key=api_key, model=model)
     name    = properties['name']
     Z_curve = properties['z_curve']
     GC_skew = properties['gc_skew']
 
     print(name)
     print('Len  :', properties['seq_size'])
-    print('QoP  :', properties['occurances'], properties['false_order'])
+    print('QoP  :', properties['occurances'])
     print('Pred :', properties['Prediction'])
     print('oriCs:', properties['oriC_middles'])
+    print(properties['num_of_genes'])
+    print(properties['time_of_prediction'])
 
-    pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [properties['oriC_middles']]*3, ['$x_n$', '$y_n$', '$g_n$'])
+    pf.plot_Z_curve_2D(list(Z_curve[:2]) + [GC_skew], [[properties['oriC_middles'][0]]]*3, ['$x_n$', '$y_n$', '$g_n$'])
     # pf.plot_skew(GC_skew, [properties['oriC_middles']], name)
     # pf.plot_Z_curve_3D(Z_curve, name)

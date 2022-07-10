@@ -8,13 +8,13 @@ from sklearn.model_selection import GridSearchCV
 import pandas as pd
 import numpy as np
 
-PATH = 'Hyperparameter tuning/tuning.csv'
+PATH = 'Hyperparameter tuning/tuning_sep_G.csv'
 RANDOM_STATE = 42
 K = 5
 
 def load_data(path):
     df = pd.read_csv(path)
-    X = df[['Z_occurance', 'G_occurance', 'D_occurance']]
+    X = df[['Z_occurance', 'G_A_occurance', 'G_N_occurance', 'D_occurance']]
     y = df[['Correct']]
     return X, y
 

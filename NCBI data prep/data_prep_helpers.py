@@ -56,16 +56,14 @@ def move_fastas(db_loc, on_cluster=True, split=4):
 if __name__ == '__main__':
 
     max_oriCs = 10
-    # fieldnames = ['RefSeq', 'Organism', 'Sequence_length', 'N_penalty', 'O_penalty', 'D_penalty', 'False_order']
-    # fieldnames.extend([f'oriC_edges_{i}' for i in range(max_oriCs)])
-    # fieldnames.extend([f'oriC_middles_{i}' for i in range(max_oriCs)])
-    # fieldnames.extend([f'xy_oriC_{i}' for i in range(max_oriCs)])
-    # fieldnames.extend([f'xgc_oriC_{i}' for i in range(max_oriCs)])
-    # fieldnames.extend([f'ygc_oriC_{i}' for i in range(max_oriCs)])
 
-    fieldnames = ['RefSeq', 'Organism', 'Sequence_length', 'False_order', 'GC_Concentration']
+    fieldnames = ['RefSeq', 'Sequence_length', 'GC_Concentration']
     fieldnames.extend([f'oriC_middles_{i}' for i in range(max_oriCs)])
-    fieldnames.extend([f'Occurance_oriC_{i}' for i in range(max_oriCs)])
+    fieldnames.extend([f'Avg_Occurance_oriC_{i}' for i in range(max_oriCs)])
+    fieldnames.extend([f'Z_Occurance_oriC_{i}' for i in range(max_oriCs)])
+    fieldnames.extend([f'G_Occurance_oriC_{i}' for i in range(max_oriCs)])
+    fieldnames.extend([f'D_Occurance_oriC_{i}' for i in range(max_oriCs)])
+    fieldnames.extend([f'Prediction_oriC_{i}' for i in range(max_oriCs)])
 
-    merge_csvs('refseq_23/csvs/', 'refseq_23/Predicted_23.csv', fieldnames, length=1)
+    merge_csvs('../exp_csvs/', '../exp_csvs/Predicted_exp.csv', fieldnames, length=1)
     # move_fastas('refseq_23', on_cluster=False, split=4)
